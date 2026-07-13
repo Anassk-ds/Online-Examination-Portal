@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import IndexPortal from '../index.jsx'; 
-import AdminPanel from '../admin.jsx'; 
-import StudentDashboard from '../student-dashboard.jsx'; 
-import TakeExam from '../take-exam.jsx';
+import IndexPortal from './index.jsx'; 
+import AdminPanel from './admin.jsx'; 
+import StudentDashboard from './student-dashboard.jsx'; 
+import TakeExam from './take-exam.jsx';
 
 const App = () => {
   const [path, setPath] = useState(window.location.pathname);
