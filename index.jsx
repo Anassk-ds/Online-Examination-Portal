@@ -45,7 +45,7 @@ const IndexPortal = () => {
 
   return (
     <div style={styles.viewWindow} className="page-fade-in">
-      {/* Dynamic transform-driven slider tracks horizontal panes based on active state */}
+      {/* Dynamic transform slider tracking horizontal panes based on active state */}
       <div 
         style={{ 
           ...styles.scrollWrapper, 
@@ -196,23 +196,61 @@ const IndexPortal = () => {
 };
 
 const styles = {
-  viewWindow: { width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: '#f1f5f9' },
-  scrollWrapper: { display: 'flex', width: '200vw', height: '100%', transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)' },
+  viewWindow: { 
+    width: '100vw', 
+    height: '100vh', 
+    overflow: 'hidden', 
+    backgroundColor: '#f1f5f9',
+    position: 'relative'
+  },
+  scrollWrapper: { 
+    display: 'flex', 
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    width: '200vw', 
+    height: '100%', 
+    transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)' 
+  },
   
-  // FIX DETAILS: Clamped layout configurations prevent compression side-by-side
-  panelPageLight: { width: '50vw', minWidth: '50vw', maxWidth: '50vw', flexShrink: 0, height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' },
-  panelPageDark: { width: '50vw', minWidth: '50vw', maxWidth: '50vw', flexShrink: 0, height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', backgroundColor: '#111827' },
+  // Anti-Compression Fixes: Enforced dimensions isolate elements against CSS sheets
+  panelPageLight: { 
+    width: '50vw', 
+    minWidth: '50vw', 
+    maxWidth: '50vw', 
+    flexBasis: '50vw',
+    flexShrink: 0, 
+    height: '100%', 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: '20px',
+    boxSizing: 'border-box'
+  },
+  panelPageDark: { 
+    width: '50vw', 
+    minWidth: '50vw', 
+    maxWidth: '50vw', 
+    flexBasis: '50vw',
+    flexShrink: 0, 
+    height: '100%', 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: '20px', 
+    backgroundColor: '#111827',
+    boxSizing: 'border-box'
+  },
   
-  card: { padding: '40px 30px', borderRadius: '16px', backgroundColor: '#fff', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', width: '100%', maxWidth: '420px' },
+  card: { padding: '40px 30px', borderRadius: '16px', backgroundColor: '#fff', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', width: '100%', maxWidth: '420px', boxSizing: 'border-box' },
   header: { textAlign: 'center', marginBottom: '24px' },
   form: { display: 'flex', flexDirection: 'column', gap: '18px' },
   inputGroup: { display: 'flex', flexDirection: 'column', gap: '6px' },
   labelLight: { fontSize: '12px', fontWeight: 'bold', color: '#4b5563' },
   labelDark: { fontSize: '12px', fontWeight: 'bold', color: '#9ca3af' },
-  lightInput: { padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', outline: 'none', color: '#1f2937' },
-  darkInput: { padding: '12px', border: '1px solid #4b5563', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: '#374151', color: '#fff' },
-  studentBtn: { backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', outline: 'none', cursor: 'pointer' },
-  adminBtn: { backgroundColor: '#4f46e5', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', outline: 'none', cursor: 'pointer' },
+  lightInput: { padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', outline: 'none', color: '#1f2937', width: '100%', boxSizing: 'border-box' },
+  darkInput: { padding: '12px', border: '1px solid #4b5563', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: '#374151', color: '#fff', width: '100%', boxSizing: 'border-box' },
+  studentBtn: { backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', outline: 'none', cursor: 'pointer', width: '100%' },
+  adminBtn: { backgroundColor: '#4f46e5', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', outline: 'none', cursor: 'pointer', width: '100%' },
   toggleRow: { textAlign: 'center', marginTop: '5px' },
   linkLight: { fontSize: '13px', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' },
   linkDark: { fontSize: '13px', color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline' },
