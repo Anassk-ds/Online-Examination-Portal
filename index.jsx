@@ -1,20 +1,22 @@
 import React, { useState, useRef } from 'react';
-// Ensure your styles are imported if they aren't already:
-// import './style.css'; 
 
 const IndexPortal = ({ navigateTo }) => {
+  // Student States
   const [studentEmail, setStudentEmail] = useState('');
   const [studentPassword, setStudentPassword] = useState('');
   const [isStudentRegister, setIsStudentRegister] = useState(false);
 
+  // Admin States
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
-  const [masterAdminEmail, setMasterAdminEmail] = useState('');
+  const [masterAdminEmail, setMasterAdminEmail] = useState(''); 
   const [isAdminRegister, setIsAdminRegister] = useState(false);
 
+  // UI Status Alerts
   const [error, setError] = useState('');
   const scrollContainerRef = useRef(null);
 
+  // Smooth Scroll Controller
   const scrollToPanel = (panelIndex) => {
     setError('');
     if (scrollContainerRef.current) {
@@ -25,6 +27,7 @@ const IndexPortal = ({ navigateTo }) => {
     }
   };
 
+  // Auth Handler
   const handleAuth = (e, type, isRegister) => {
     e.preventDefault();
     setError('');
@@ -44,9 +47,8 @@ const IndexPortal = ({ navigateTo }) => {
   };
 
   return (
-    <div className="w-screen h-screen overflow-hidden relative font-sans">
-      
-      {/* Clean Character Elements linked to your style.css properties */}
+    <div className="view-window">
+      {/* Pure CSS Character Wrapper Layer */}
       <div className="pure-css-walker">
         <div className="human-head"></div>
         <div className="human-body"></div>
@@ -57,57 +59,56 @@ const IndexPortal = ({ navigateTo }) => {
         <div className="human-leg leg-right"></div>
       </div>
 
-      <div className="flex w-full h-full overflow-x-hidden snap-x snap-mandatory" ref={scrollContainerRef}>
+      <div className="scroll-wrapper" ref={scrollContainerRef}>
+        
         {/* ================= PANEL 1: STUDENT PORTAL ================= */}
-        <div className="min-w-full h-full bg-gray-100 flex justify-center items-center snap-start">
-          <div className="bg-white p-[30px] rounded-xl shadow-md w-[380px]">
-            <div className="text-center mb-6">
-              <h2 className="text-gray-800 text-2xl font-bold mb-1">Student Portal</h2>
-              <p className="text-gray-500 text-xs tracking-wider uppercase">Online Examination Terminal</p>
+        <div className="panel-page-light">
+          <div className="portal-card">
+            <div className="portal-header">
+              <h2>Student Portal</h2>
+              <p>Online Examination Terminal</p>
             </div>
 
-            {error && !isAdminRegister && (
-              <div className="bg-red-100 text-red-600 p-2.5 rounded-md mb-4 text-sm text-center">⚠️ {error}</div>
-            )}
+            {error && !isAdminRegister && <div className="error-alert">⚠️ {error}</div>}
 
-            <form onSubmit={(e) => handleAuth(e, 'student', isStudentRegister)} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Student Email</label>
+            <form onSubmit={(e) => handleAuth(e, 'student', isStudentRegister)} className="portal-form">
+              <div className="input-group">
+                <label className="label-light">Student Email</label>
                 <input 
                   type="email" 
                   placeholder="student@university.com" 
                   value={studentEmail}
                   onChange={e => setStudentEmail(e.target.value)}
                   required 
-                  className="p-2.5 rounded-md border border-gray-300 text-sm w-full outline-none focus:border-blue-500"
+                  className="light-input"
                 />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Password</label>
+              <div className="input-group">
+                <label className="label-light">Password</label>
                 <input 
                   type="password" 
                   placeholder="••••••••" 
                   value={studentPassword}
                   onChange={e => setStudentPassword(e.target.value)}
                   required 
-                  className="p-2.5 rounded-md border border-gray-300 text-sm w-full outline-none focus:border-blue-500"
+                  className="light-input"
                 />
               </div>
 
-              <button type="submit" className="p-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer transition-colors">
+              <button type="submit" className="student-btn">
                 {isStudentRegister ? 'Register Profile' : 'Secure Student Sign In'}
               </button>
 
-              <div className="text-center mt-1">
-                <span onClick={() => setIsStudentRegister(!isStudentRegister)} className="text-xs text-blue-600 cursor-pointer underline">
+              <div className="toggle-row">
+                <span onClick={() => setIsStudentRegister(!isStudentRegister)} className="link-light">
                   {isStudentRegister ? 'Already have an account? Sign In' : 'New student? Register Here'}
                 </span>
               </div>
             </form>
 
-            <div className="mt-6 pt-5 border-t border-gray-200 text-center">
-              <p className="text-xs text-gray-600 mb-2">Need administrative tools?</p>
-              <button type="button" onClick={() => scrollToPanel(1)} className="bg-transparent border-none text-gray-600 hover:text-gray-900 cursor-pointer font-semibold text-sm">
+            <div className="switch-terminal-box">
+              <p>Need administrative tools?</p>
+              <button type="button" onClick={() => scrollToPanel(1)} className="slide-next-btn">
                 Slide to Admin Console ➔
               </button>
             </div>
@@ -115,75 +116,73 @@ const IndexPortal = ({ navigateTo }) => {
         </div>
 
         {/* ================= PANEL 2: ADMIN SYSTEM CONSOLE ================= */}
-        <div className="min-w-full h-full bg-gray-900 flex justify-center items-center snap-start">
-          <div className="bg-gray-800 border border-gray-700 p-[30px] rounded-xl shadow-md w-[380px]">
-            <div className="text-center mb-6">
-              <h2 className="text-gray-5
-font-bold text-2xl mb-1">Admin Console</h2>
-              <p className="text-gray-400 text-xs tracking-wider uppercase">Secure Infrastructure Access</p>
+        <div className="panel-page-dark">
+          <div className="portal-card dark-card">
+            <div className="portal-header">
+              <h2 style={{ color: '#f9fafb' }}>Admin Console</h2>
+              <p style={{ color: '#9ca3af' }}>Secure Infrastructure Access</p>
             </div>
 
-            {error && isAdminRegister && (
-              <div className="bg-red-100 text-red-600 p-2.5 rounded-md mb-4 text-sm text-center">⚠️ {error}</div>
-            )}
+            {error && isAdminRegister && <div className="error-alert">⚠️ {error}</div>}
 
-            <form onSubmit={(e) => handleAuth(e, 'admin', isAdminRegister)} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-300">Admin Email</label>
+            <form onSubmit={(e) => handleAuth(e, 'admin', isAdminRegister)} className="portal-form">
+              <div className="input-group">
+                <label className="label-dark">Admin Email</label>
                 <input 
                   type="email" 
                   placeholder="admin@university.com" 
                   value={adminEmail}
                   onChange={e => setAdminEmail(e.target.value)}
                   required 
-                  className="p-2.5 rounded-md border border-gray-600 bg-gray-700 text-white text-sm w-full outline-none focus:border-emerald-500"
+                  className="dark-input"
                 />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-300">Password</label>
+              <div className="input-group">
+                <label className="label-dark">Password</label>
                 <input 
                   type="password" 
                   placeholder="••••••••" 
                   value={adminPassword}
                   onChange={e => setAdminPassword(e.target.value)}
                   required 
-                  className="p-2.5 rounded-md border border-gray-600 bg-gray-700 text-white text-sm w-full outline-none focus:border-emerald-500"
+                  className="dark-input"
                 />
               </div>
 
               {isAdminRegister && (
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-red-400">Master Admin Email Verification</label>
+                <div className="input-group">
+                  <label className="label-dark" style={{ color: '#f87171' }}>Master Admin Email Verification</label>
                   <input 
                     type="email" 
                     placeholder="existing.admin@university.com" 
                     value={masterAdminEmail}
                     onChange={e => setMasterAdminEmail(e.target.value)}
                     required 
-                    className="p-2.5 rounded-md border border-red-500 bg-gray-700 text-white text-sm w-full outline-none"
+                    className="dark-input border-red"
                   />
                 </div>
               )}
 
-              <button type="submit" className="p-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer transition-colors">
+              <button type="submit" className="admin-btn">
                 {isAdminRegister ? 'Deploy New Admin' : 'Secure Admin Login'}
               </button>
 
-              <div className="text-center mt-1">
-                <span onClick={() => setIsAdminRegister(!isAdminRegister)} className="text-xs text-emerald-400 cursor-pointer underline">
+              <div className="toggle-row">
+                <span onClick={() => setIsAdminRegister(!isAdminRegister)} className="link-dark">
                   {isAdminRegister ? 'Cancel Registration' : 'New Admin? Register Profile'}
                 </span>
               </div>
             </form>
 
-            <div className="mt-6 pt-5 border-t border-gray-700 text-center">
-              <p className="text-xs text-gray-400 mb-2">Are you a test taker?</p>
-              <button type="button" onClick={() => scrollToPanel(0)} className="bg-transparent border-none text-gray-400 hover:text-gray-200 cursor-pointer font-semibold text-sm">
+            <div className="switch-terminal-box border-dark">
+              <p style={{ color: '#9ca3af' }}>Are you a test taker?</p>
+              <button type="button" onClick={() => scrollToPanel(0)} className="slide-prev-btn">
                 ◀ Return to Student Portal
               </button>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
