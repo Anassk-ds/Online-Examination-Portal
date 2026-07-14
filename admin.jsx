@@ -10,7 +10,6 @@ const AdminPanel = () => {
   const [startDate, setStartDate] = useState(''); 
   const [endDate, setEndDate] = useState('');   
   
-  // This array holds all the questions you create dynamically
   const [questions, setQuestions] = useState([
     { type: 'mcq', text: '', optionA: '', optionB: '', optionC: '', optionD: '', correct: 'A', codingProblemStatement: '', allowedLanguages: ['javascript', 'python', 'java'] }
   ]);
@@ -31,283 +30,274 @@ const AdminPanel = () => {
     .catch(() => setLoading(false));
   };
 
-  useEffect(() => { 
+  useEffect(() => {
     loadAdminMetricsData();
-
-    // Safety net: don't let a slow/unreachable backend leave the panel
-    // stuck on the loading screen forever. This used to be scheduled
-    // inside the render body itself (a fresh setTimeout on every render
-    // while `loading` was true), which is a React anti-pattern — it
-    // fires as a side effect during render, and since it never gets
-    // cleared it stacks up dozens of overlapping timers. Scheduling it
-    // once here, on mount, with proper cleanup fixes that.
-    const safetyTimer = setTimeout(() => setLoading(false), 3000);
-    return () => clearTimeout(safetyTimer);
   }, []);
 
-  const handleQuestionChange = (idx, field, val) => {
+  const handleQuestionFieldUpdate = (index, field, value) => {
     const updated = [...questions];
-    if (updated[idx]) {
-      updated[idx][field] = val;
-      setQuestions(updated);
-    }
+    updated[index][field] = value;
+    setQuestions(updated);
   };
 
-  const handleLanguageCheckboxChange = (qIdx, lang) => {
-    const updated = [...questions];
-    if (updated[qIdx]) {
-      const currentLangs = updated[qIdx].allowedLanguages || [];
-      if (currentLangs.includes(lang)) {
-        updated[qIdx].allowedLanguages = currentLangs.filter(l => l !== lang);
-      } else {
-        updated[qIdx].allowedLanguages = [...currentLangs, lang];
-      }
-      setQuestions(updated);
-    }
+  const handleAddNewQuestionRow = () => {
+    setQuestions([
+      ...questions,
+      { type: 'mcq', text: '', optionA: '', optionB: '', optionC: '', optionD: '', correct: 'A', codingProblemStatement: '', allowedLanguages: ['javascript', 'python', 'java'] }
+    ]);
   };
 
-  const addQuestionField = (type = 'mcq') => {
-    if (type === 'coding') {
-      setQuestions([...questions, { type: 'coding', codingProblemStatement: '', allowedLanguages: ['javascript', 'python', 'java', 'cpp'] }]);
-    } else {
-      setQuestions([...questions, { type: 'mcq', text: '', optionA: '', optionB: '', optionC: '', optionD: '', correct: 'A' }]);
-    }
-  };
-
-  const removeQuestionField = (idx) => {
+  const handleRemoveQuestionRow = (index) => {
     if (questions.length === 1) return;
-    setQuestions(questions.filter((_, i) => i !== idx));
+    setQuestions(questions.filter((_, i) => i !== index));
   };
 
-  const handlePublishExam = async (e) => {
+  const handleCreateNewExamManifest = (e) => {
     e.preventDefault();
-    setMessage(''); setError('');
-    if (!examTitle.trim() || !startDate || !endDate) return setError("Please fill in all layout elements.");
+    setMessage('');
+    setError('');
 
-    try {
-      const res = await fetch('/api/admin/create-exam', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: examTitle, startDate, endDate, questions })
-      });
-      if (!res.ok) throw new Error();
-      setMessage("🏁 Exam configuration and question tracks successfully deployed live!");
-      setExamTitle(''); setStartDate(''); setEndDate('');
-      setQuestions([{ type: 'mcq', text: '', optionA: '', optionB: '', optionC: '', optionD: '', correct: 'A' }]);
-      loadAdminMetricsData();
-    } catch { 
-      setError("Failed to communicate settings to backend ecosystem."); 
+    if (!examTitle.trim() || !startDate || !endDate) {
+      return setError('Please configure all essential baseline metadata tracking bounds.');
     }
+
+    const compiledExamObject = {
+      title: examTitle,
+      startDate: new Date(startDate).toISOString(),
+      endDate: new Date(endDate).toISOString(),
+      questions: questions
+    };
+
+    fetch('/api/admin/create-exam', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(compiledExamObject)
+    })
+    .then((res) => {
+      if (!res.ok) throw new Error('Failed to authorize operational deployment parameters.');
+      return res.json();
+    })
+    .then(() => {
+      setMessage('🎉 Structural assessment packet assembled and pushed to production registries successfully.');
+      setExamTitle('');
+      setStartDate('');
+      setEndDate('');
+      setQuestions([{ type: 'mcq', text: '', optionA: '', optionB: '', optionC: '', optionD: '', correct: 'A', codingProblemStatement: '', allowedLanguages: ['javascript', 'python', 'java'] }]);
+      loadAdminMetricsData();
+    })
+    .catch((err) => setError(err.message));
   };
 
-  const handleLogout = () => {
+  const handleSignOut = () => {
     localStorage.clear();
     navigate('/');
   };
 
-  if (loading) return <div style={styles.loadingScreen}>🔄 Fetching Admin Control Metrics...</div>;
+  if (loading) return <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#475569', textAlign: 'center' }}>🔄 Querying live supervisor databanks...</div>;
 
   return (
-    <div style={styles.container}>
-      <header style={styles.header}>
+    <div style={styles.viewRoot} className="page-fade-in">
+      {/* Structural Admin Control Header Panel */}
+      <div style={styles.navbarTop} className="sidebar-fade-in">
         <div>
-          <h2 style={styles.title}>Cit Platform Control Center</h2>
-          <p style={styles.subtitle}>Welcome back, Administrator</p>
+          <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 'bold' }}>🛡️ Infrastructure Control Center</h1>
+          <p style={{ margin: '2px 0 0 0', color: '#94a3b8', fontSize: '12px' }}>Operational Authority Layer Node Active</p>
         </div>
-        <button onClick={handleLogout} style={styles.logoutBtn}>Sign Out</button>
-      </header>
+        <button onClick={handleSignOut} style={styles.logoutActionBtn} className="btn-animated">Disconnect Console Session</button>
+      </div>
 
-      <div style={styles.dashboardLayout}>
-        {/* Left Creator Panel */}
-        <div style={styles.creatorSide}>
+      <div style={styles.workspaceSplitGrid}>
+        
+        {/* LEFT HAND SCHEDULER MATRIX FORM FRAME */}
+        <div style={styles.scrollColumnPane} className="card-animated">
           <div style={styles.panelCard}>
-            <h3 style={styles.cardHeaderTitle}>🔨 Exam Creation Workshop</h3>
-            <p style={styles.cardHeaderSubtitle}>Build text-based multi-choice items or multi-language code problems</p>
+            <h3 style={styles.paneSectionHeading}>📝 Provision New Examination Matrix</h3>
+            
+            {message && <div style={styles.successMessageRow}>✓ {message}</div>}
+            {error && <div style={styles.errorMessageRow}>⚠️ {error}</div>}
 
-            {message && <div style={styles.successBox}>{message}</div>}
-            {error && <div style={styles.errorBox}>{error}</div>}
-
-            <form onSubmit={handlePublishExam} style={styles.form}>
-              <div style={styles.inputRow}>
-                <label style={styles.label}>Global Exam Session Title</label>
+            <form onSubmit={handleCreateNewExamManifest} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={styles.inputStackField}>
+                <label style={styles.fieldLabel}>Global Assessment Descriptive Title</label>
                 <input 
                   type="text" 
-                  value={examTitle} 
-                  onChange={e => setExamTitle(e.target.value)} 
-                  placeholder="e.g., Mid-Term Programming & Data Structures Exam" 
-                  style={styles.textInput} 
-                  required 
+                  placeholder="e.g., Advanced Algorithmic Complexity Evaluation" 
+                  value={examTitle}
+                  onChange={e => setExamTitle(e.target.value)}
+                  style={styles.textInputBox}
+                  className="input-animated"
                 />
               </div>
 
-              <div style={styles.gridTwoColumns}>
-                <div style={styles.inputRow}>
-                  <label style={styles.label}>⏰ Activation Start Date</label>
-                  <input type="datetime-local" value={startDate} onChange={e => setStartDate(e.target.value)} style={styles.textInput} required />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div style={styles.inputStackField}>
+                  <label style={styles.fieldLabel}>Opening Gateway Date/Time</label>
+                  <input 
+                    type="datetime-local" 
+                    value={startDate}
+                    onChange={e => setStartDate(e.target.value)}
+                    style={styles.textInputBox}
+                    className="input-animated"
+                  />
                 </div>
-                <div style={styles.inputRow}>
-                  <label style={styles.label}>🛑 Submission Cutoff Date</label>
-                  <input type="datetime-local" value={endDate} onChange={e => setEndDate(e.target.value)} style={styles.textInput} required />
+                <div style={styles.inputStackField}>
+                  <label style={styles.fieldLabel}>Absolute Closing Deadline</label>
+                  <input 
+                    type="datetime-local" 
+                    value={endDate}
+                    onChange={e => setEndDate(e.target.value)}
+                    style={styles.textInputBox}
+                    className="input-animated"
+                  />
                 </div>
               </div>
 
-              <div style={styles.questionsWrapper}>
-                <h4 style={styles.sectionDivider}>Constructed Question Elements</h4>
+              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px', marginTop: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <h4 style={{ margin: 0, color: '#1e293b', fontSize: '15px' }}>Questions Inventory Stack ({questions.length})</h4>
+                  <button type="button" onClick={handleAddNewQuestionRow} style={styles.secondaryAddBtn} className="btn-animated">
+                    ➕ Append Question Block
+                  </button>
+                </div>
 
                 {questions.map((q, idx) => (
-                  <div key={idx} style={styles.questionCard}>
-                    <div style={styles.questionCardHeader}>
-                      <span style={{
-                        ...styles.typeBadge,
-                        backgroundColor: q.type === 'coding' ? '#fee2e2' : '#e0e7ff',
-                        color: q.type === 'coding' ? '#ef4444' : '#4f46e5',
-                      }}>
-                        {q.type === 'coding' ? `💻 CODING CHALLENGE #${idx + 1}` : `📝 MCQ ITEM #${idx + 1}`}
-                      </span>
+                  <div key={idx} style={styles.dynamicQuestionContainerCard} className="card-animated">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '13px', color: '#2563eb' }}>Item Entity Element #{idx + 1}</span>
                       {questions.length > 1 && (
-                        <button type="button" onClick={() => removeQuestionField(idx)} style={styles.removeBtn}>✕ Delete</button>
+                        <button type="button" onClick={() => handleRemoveQuestionRow(idx)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }} className="btn-animated">
+                          [❌ Drop Item Row]
+                        </button>
                       )}
                     </div>
 
-                    {/* RENDER VIEW BASED ON TYPE */}
-                    {q.type === 'coding' ? (
-                      <div style={styles.fieldStack}>
-                        <label style={styles.label}>Coding Prompt & Test Case Conditions</label>
-                        <textarea 
-                          rows="4" 
-                          placeholder="Write problem text here. Example:&#10;Write a program to reverse a linked list.&#10;&#10;Input Format: [1, 2, 3]&#10;Output Format: [3, 2, 1]"
-                          value={q.codingProblemStatement || ''}
-                          onChange={e => handleQuestionChange(idx, 'codingProblemStatement', e.target.value)}
-                          style={styles.textarea}
-                          required
-                        />
-                        
-                        <label style={styles.label}>Select Enabled Compilers:</label>
-                        <div style={styles.checkboxGroup}>
-                          {['javascript', 'python', 'java', 'cpp'].map(lang => (
-                            <label key={lang} style={styles.checkboxLabel}>
-                              <input 
-                                type="checkbox" 
-                                checked={(q.allowedLanguages || []).includes(lang)}
-                                onChange={() => handleLanguageCheckboxChange(idx, lang)}
-                              />
-                              <span style={{ textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold' }}>{lang}</span>
-                            </label>
-                          ))}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                      <div style={styles.dropdownRow}>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}>Structural Class Type:</span>
+                        <select 
+                          value={q.type} 
+                          onChange={e => handleQuestionFieldUpdate(idx, 'type', e.target.value)}
+                          style={styles.select}
+                          className="input-animated"
+                        >
+                          <option value="mcq">Multiple Choice Question (MCQ)</option>
+                          <option value="coding">Lab Programming Compiler (Coding)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={styles.inputStackField}>
+                      <label style={styles.fieldLabel}>Problem Context Statement Prompt</label>
+                      <textarea 
+                        rows={2}
+                        placeholder="Define item specifications or coding question logic arrays..."
+                        value={q.text}
+                        onChange={e => handleQuestionFieldUpdate(idx, 'text', e.target.value)}
+                        style={styles.textareaField}
+                        className="input-animated"
+                      />
+                    </div>
+
+                    {q.type === 'mcq' ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px', borderTop: '1px dashed #e2e8f0', paddingTop: '12px' }}>
+                        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>Option Targets Array Configuration:</span>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                          <input type="text" placeholder="Option A String" value={q.optionA} onChange={e => handleQuestionFieldUpdate(idx, 'optionA', e.target.value)} style={styles.miniTextInput} className="input-animated" />
+                          <input type="text" placeholder="Option B String" value={q.optionB} onChange={e => handleQuestionFieldUpdate(idx, 'optionB', e.target.value)} style={styles.miniTextInput} className="input-animated" />
+                          <input type="text" placeholder="Option C String" value={q.optionC} onChange={e => handleQuestionFieldUpdate(idx, 'optionC', e.target.value)} style={styles.miniTextInput} className="input-animated" />
+                          <input type="text" placeholder="Option D String" value={q.optionD} onChange={e => handleQuestionFieldUpdate(idx, 'optionD', e.target.value)} style={styles.miniTextInput} className="input-animated" />
+                        </div>
+                        <div style={{ ...styles.dropdownRow, marginTop: '5px' }}>
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>Correct Targeted Key Choice Flag:</span>
+                          <select value={q.correct} onChange={e => handleQuestionFieldUpdate(idx, 'correct', e.target.value)} style={styles.select} className="input-animated">
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                          </select>
                         </div>
                       </div>
                     ) : (
-                      <div style={styles.fieldStack}>
-                        <label style={styles.label}>Multiple Choice Question Text</label>
-                        <input 
-                          type="text" 
-                          placeholder="What is the time complexity of binary search?" 
-                          value={q.text || ''} 
-                          onChange={e => handleQuestionChange(idx, 'text', e.target.value)}
-                          style={styles.textInput} 
-                          required 
-                        />
-
-                        <div style={styles.gridTwoColumns}>
-                          <input type="text" placeholder="Option A" value={q.optionA || ''} onChange={e => handleQuestionChange(idx, 'optionA', e.target.value)} style={styles.textInput} required />
-                          <input type="text" placeholder="Option B" value={q.optionB || ''} onChange={e => handleQuestionChange(idx, 'optionB', e.target.value)} style={styles.textInput} required />
-                          <input type="text" placeholder="Option C" value={q.optionC || ''} onChange={e => handleQuestionChange(idx, 'optionC', e.target.value)} style={styles.textInput} required />
-                          <input type="text" placeholder="Option D" value={q.optionD || ''} onChange={e => handleQuestionChange(idx, 'optionD', e.target.value)} style={styles.textInput} required />
-                        </div>
-
-                        <div style={styles.dropdownRow}>
-                          <label style={{ ...styles.label, margin: 0 }}>Designate Answer Selection:</label>
-                          <select value={q.correct || 'A'} onChange={e => handleQuestionChange(idx, 'correct', e.target.value)} style={styles.select}>
-                            <option value="A">Option A</option>
-                            <option value="B">Option B</option>
-                            <option value="C">Option C</option>
-                            <option value="D">Option D</option>
-                          </select>
-                        </div>
+                      <div style={{ marginTop: '12px', borderTop: '1px dashed #e2e8f0', paddingTop: '12px', fontSize: '12px', color: '#64748b' }}>
+                        ℹ️ Lab Programming question block active. Standard input hooks drive text compilation frameworks inside the exam room views automatically.
                       </div>
                     )}
                   </div>
                 ))}
               </div>
 
-              {/* ACTION TOGGLES */}
               <div style={styles.actionBlock}>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button type="button" onClick={() => addQuestionField('mcq')} style={styles.secondaryAddBtn}>➕ Add MCQ</button>
-                  <button type="button" onClick={() => addQuestionField('coding')} style={{ ...styles.secondaryAddBtn, color: '#ef4444', borderColor: '#ef4444' }}>💻 Add Coding Track</button>
-                </div>
-                <button type="submit" style={styles.publishBtn}>🚀 Release Exam Configuration</button>
+                <button type="submit" style={styles.publishBtn} className="btn-animated">
+                  🚀 Synchronize Assessment Frame to Production Core
+                </button>
               </div>
             </form>
           </div>
         </div>
 
-        {/* Right Tracker Panel */}
-        <div style={styles.trackerSide}>
-          <div style={styles.panelCard}>
-            <h3 style={styles.cardHeaderTitle}>📊 Live Tracking Records</h3>
-            <p style={styles.cardHeaderSubtitle}>Real-time system state metrics of student results</p>
+        {/* RIGHT HAND ANALYTICS LOGGER STREAMER COLUMN */}
+        <div style={styles.scrollColumnPane} className="card-animated">
+          {/* Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '25px' }}>
+            <div style={{ ...styles.panelCard, backgroundColor: '#eff6ff', border: '1px solid #bfdbfe' }} className="card-animated">
+              <span style={{ fontSize: '11px', color: '#1e3a8a', fontWeight: 'bold' }}>EXAMS ACTIVE REGISTRY COUNT</span>
+              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1e40af', marginTop: '5px' }}>{stats.examsConducted} Packets</div>
+            </div>
+            <div style={{ ...styles.panelCard, backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0' }} className="card-animated">
+              <span style={{ fontSize: '11px', color: '#064e3b', fontWeight: 'bold' }}>REGISTERED STUDENT PROFILES</span>
+              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#065f46', marginTop: '5px' }}>{stats.registeredStudents} Nodes</div>
+            </div>
+          </div>
 
-            {submissions.length === 0 ? (
-              <p style={{ color: '#64748b', fontSize: '14px', textAlign: 'center', marginTop: '30px' }}>No student entry records parsed yet.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '20px' }}>
-                {submissions.map((sub, key) => (
-                  <div key={key} style={styles.submissionRow}>
-                    <div>
-                      <h5 style={{ margin: '0 0 4px 0', color: '#1e293b', fontSize: '14px' }}>{sub.studentEmail}</h5>
-                      <span style={{ fontSize: '11px', color: '#64748b' }}>{sub.examTitle || 'Exam Submission'}</span>
+          {/* Submissions Feed */}
+          <div style={styles.panelCard}>
+            <h3 style={styles.paneSectionHeading}>📊 Real-time Stream Analytics Feed Logs</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {submissions.length === 0 ? (
+                <div style={{ padding: '30px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>No student answers maps synced inside active transaction storage records yet.</div>
+              ) : (
+                submissions.map((sub) => (
+                  <div key={sub._id} style={styles.submissionRow} className="card-animated">
+                    <div style={{ overflow: 'hidden', paddingRight: '10px' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#1e293b' }}>{sub.examTitle || 'Exam Attempt'}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Identity Profile Key: {sub.studentEmail || 'Unknown'}</div>
                     </div>
-                    <span style={styles.scoreBadge}>{sub.score ?? 'N/A'}</span>
+                    <span style={styles.scoreBadge}>✓ Verified Transmitted Packets</span>
                   </div>
-                ))}
-              </div>
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   );
 };
 
-// Clean UI Stylesheet object
 const styles = {
-  container: { minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'system-ui, sans-serif' },
-  loadingScreen: { minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'system-ui, sans-serif', color: '#475569', fontSize: '16px' },
-  header: { height: '75px', backgroundColor: '#0f172a', padding: '0 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff', borderBottom: '3px solid #3b82f6' },
-  title: { fontSize: '18px', margin: 0, fontWeight: 'bold' },
-  subtitle: { fontSize: '12px', color: '#94a3b8', margin: 0 },
-  logoutBtn: { backgroundColor: '#334155', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
-  dashboardLayout: { padding: '40px', maxWidth: '1400px', margin: '0 auto', display: 'flex', gap: '30px', flexWrap: 'wrap' },
-  creatorSide: { flex: '3 1 600px' },
-  trackerSide: { flex: '1.5 1 350px' },
-  panelCard: { backgroundColor: '#fff', padding: '30px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01)' },
-  cardHeaderTitle: { margin: '0 0 4px 0', color: '#0f172a', fontSize: '18px' },
-  cardHeaderSubtitle: { margin: '0 0 24px 0', color: '#64748b', fontSize: '13px' },
-  form: { display: 'flex', flexDirection: 'column', gap: '20px' },
-  inputRow: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  gridTwoColumns: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
-  label: { fontSize: '11px', fontWeight: 'bold', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.3px' },
-  textInput: { padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', width: '100%', boxSizing: 'border-box', outline: 'none' },
-  textarea: { padding: '12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', width: '100%', boxSizing: 'border-box', fontFamily: 'monospace', outline: 'none', resize: 'vertical' },
-  questionsWrapper: { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '20px' },
-  sectionDivider: { fontSize: '12px', color: '#3b82f6', borderBottom: '2px dashed #e2e8f0', paddingBottom: '8px', margin: '0 0 10px 0', textTransform: 'uppercase' },
-  questionCard: { padding: '20px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' },
-  questionCardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
-  typeBadge: { fontSize: '10px', fontWeight: 'bold', padding: '4px 8px', borderRadius: '4px' },
-  removeBtn: { backgroundColor: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' },
-  fieldStack: { display: 'flex', flexDirection: 'column', gap: '14px' },
-  checkboxGroup: { display: 'flex', gap: '14px', flexWrap: 'wrap' },
-  checkboxLabel: { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', backgroundColor: '#fff', padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' },
+  viewRoot: { width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', fontFamily: 'sans-serif', overflow: 'hidden' },
+  navbarTop: { height: '75px', backgroundColor: '#0f172a', color: '#fff', padding: '0 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b' },
+  logoutActionBtn: { backgroundColor: '#334155', color: '#cbd5e1', border: 'none', padding: '10px 16px', borderRadius: '6px', fontWeight: 'bold', fontSize: '12px', outline: 'none' },
+  workspaceSplitGrid: { flex: 1, display: 'grid', gridTemplateColumns: '1.2fr 1fr', overflow: 'hidden' },
+  scrollColumnPane: { padding: '30px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' },
+  panelCard: { backgroundColor: '#fff', border: '1px solid #e2e8f0', padding: '24px', borderRadius: '12px' },
+  paneSectionHeading: { margin: '0 0 20px 0', fontSize: '16px', color: '#0f172a', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  inputStackField: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  fieldLabel: { fontSize: '12px', fontWeight: 'bold', color: '#475569' },
+  textInputBox: { padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', outline: 'none', color: '#1e293b' },
+  textareaField: { padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', outline: 'none', color: '#1e293b', fontFamily: 'sans-serif', resize: 'vertical' },
+  dynamicQuestionContainerCard: { backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', marginBottom: '15px' },
+  miniTextInput: { padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', outline: 'none' },
   dropdownRow: { display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' },
   select: { padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1' },
   actionBlock: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' },
-  publishBtn: { backgroundColor: '#3b82f6', color: '#fff', border: 'none', padding: '12px 20px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
-  secondaryAddBtn: { backgroundColor: '#fff', color: '#475569', border: '1px solid #cbd5e1', padding: '8px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
+  publishBtn: { backgroundColor: '#3b82f6', color: '#fff', border: 'none', padding: '12px 20px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', outline: 'none', width: '100%' },
+  secondaryAddBtn: { backgroundColor: '#fff', color: '#475569', border: '1px solid #cbd5e1', padding: '8px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', outline: 'none' },
   submissionRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px' },
-  scoreBadge: { backgroundColor: '#dcfce7', color: '#16a34a', fontWeight: 'bold', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' },
-  successBox: { padding: '12px', backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: '6px', fontSize: '14px' },
-  errorBox: { padding: '12px', backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '14px' }
+  scoreBadge: { backgroundColor: '#dcfce7', color: '#16a34a', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' },
+  successMessageRow: { padding: '12px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', borderRadius: '6px', fontSize: '13px', marginBottom: '15px' },
+  errorMessageRow: { padding: '12px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', borderRadius: '6px', fontSize: '13px', marginBottom: '15px' }
 };
 
 export default AdminPanel;
