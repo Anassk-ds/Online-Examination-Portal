@@ -3,14 +3,14 @@ import { Link } from 'react-router-dom';
 
 const NotFound = () => {
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
+    <div style={styles.container} className="page-fade-in">
+      <div style={styles.card} className="card-animated">
         <div style={styles.errorCode}>404</div>
         <h1 style={styles.title}>Page Not Found</h1>
         <p style={styles.message}>
           The page you're looking for doesn't exist or may have been moved.
         </p>
-        <Link to="/" style={styles.homeBtn}>← Return to Home</Link>
+        <Link to="/" style={styles.homeBtn} className="btn-animated">← Return to Home</Link>
       </div>
     </div>
   );
@@ -22,7 +22,7 @@ const styles = {
   errorCode: { fontSize: '72px', fontWeight: 'bold', color: '#3b82f6', lineHeight: 1 },
   title: { color: '#f8fafc', fontSize: '22px', margin: '16px 0 10px 0' },
   message: { color: '#94a3b8', fontSize: '14px', marginBottom: '30px', lineHeight: 1.6 },
-  homeBtn: { display: 'inline-block', backgroundColor: '#3b82f6', color: '#fff', padding: '12px 26px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', fontSize: '14px' }
+  homeBtn: { display: 'inline-block', backgroundColor: '#3b82f6', color: '#ffffff', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', textDecoration: 'none' }
 };
 
 export default NotFound;
