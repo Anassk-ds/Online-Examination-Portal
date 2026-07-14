@@ -1,34 +1,26 @@
-import React, { useState, useEffect } from 'react'; // It is used to create a page which will contail all the files and show the code or run the files by using it
+import React from 'react';
 import ReactDOM from 'react-dom/client';
-import IndexPortal from './index.jsx'; 
-import AdminPanel from './admin.jsx'; 
-import StudentDashboard from './student-dashboard.jsx'; 
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import IndexPortal from './index.jsx';
+import AdminPanel from './admin.jsx';
+import StudentDashboard from './student-dashboard.jsx';
 import TakeExam from './take-exam.jsx';
+import ExamDetails from './ExamDetails.jsx';
+import NotFound from './NotFound.jsx';
 
 const App = () => {
-  const [path, setPath] = useState(window.location.pathname);
-  const [searchParams, setSearchParams] = useState(new URLSearchParams(window.location.search));
-
-  useEffect(() => {
-    const handleLocationChange = () => {
-      setPath(window.location.pathname);
-      setSearchParams(new URLSearchParams(window.location.search));
-    };
-    window.addEventListener('popstate', handleLocationChange);
-    return () => window.removeEventListener('popstate', handleLocationChange);
-  }, []);
-
-  const navigateTo = (targetPath) => {
-    window.history.pushState({}, '', targetPath);
-    const [cleanPath, search] = targetPath.split('?');
-    setPath(cleanPath);
-    setSearchParams(new URLSearchParams(search || ''));
-  };
-
-  if (path === '/admin') return <AdminPanel navigateTo={navigateTo} />;
-  if (path === '/dashboard') return <StudentDashboard navigateTo={navigateTo} />;
-  if (path === '/take-exam') return <TakeExam examId={searchParams.get('id')} navigateTo={navigateTo} />;
-  return <IndexPortal navigateTo={navigateTo} />;
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<IndexPortal />} />
+        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/dashboard" element={<StudentDashboard />} />
+        <Route path="/exams/:id" element={<ExamDetails />} />
+        <Route path="/take-exam/:id" element={<TakeExam />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+  );
 };
 
 ReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>);
