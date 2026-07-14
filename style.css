@@ -1,223 +1,240 @@
-import React, { useState, useRef } from 'react';
+:root {
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --success: #10b981;
+    --success-hover: #059669;
+    --accent: #4f46e5;
+    --accent-hover: #4338ca;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --background: #f8fafc;
+    --surface: #ffffff;
+    --text: #1e293b;
+    --border: #e2e8f0;
+}
 
-const IndexPortal = ({ navigateTo }) => {
-  // Student States
-  const [studentEmail, setStudentEmail] = useState('');
-  const [studentPassword, setStudentPassword] = useState('');
-  const [isStudentRegister, setIsStudentRegister] = useState(false);
+/* Global reset */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
 
-  // Admin States
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-  const [masterAdminEmail, setMasterAdminEmail] = useState('');
-  const [isAdminRegister, setIsAdminRegister] = useState(false);
+html, body, #root {
+    height: 100%;
+}
 
-  // UI Status Alerts
-  const [error, setError] = useState('');
-  const scrollContainerRef = useRef(null);
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--background);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
 
-  // Smooth Scroll Controller
-  const scrollToPanel = (panelIndex) => {
-    setError('');
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({
-        left: panelIndex * scrollContainerRef.current.clientWidth,
-        behavior: 'smooth'
-      });
+*:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 8px;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Core Global CSS Keyframe Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
     }
-  };
-
-  // Auth Handler
-  const handleAuth = (e, type, isRegister) => {
-    e.preventDefault();
-    setError('');
-
-    const email = type === 'admin' ? adminEmail : studentEmail;
-    const password = type === 'admin' ? adminPassword : studentPassword;
-
-    if (!email.trim() || !password.trim()) {
-      return setError('Please fill in all secure authentication inputs.');
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
+}
 
-    if (type === 'admin' && isRegister && !masterAdminEmail.trim()) {
-      return setError('Access Denied: Master Admin email verification signature required.');
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
     }
-
-    localStorage.setItem('userEmail', email);
-    localStorage.setItem('userRole', type);
-
-    if (type === 'admin') {
-      navigateTo('/admin');
-    } else {
-      navigateTo('/dashboard');
+    to {
+        opacity: 1;
+        transform: translateX(0);
     }
-  };
+}
 
-  return (
-    <div className="w-screen h-screen overflow-hidden relative font-sans">
-      
-      {/* 1. Global CSS Injector for Leg and Body Movement Keyframes */}
-      <style>{`
-        @keyframes walkAcrossScreen {
-          0% { transform: translateX(-160px); }
-          100% { transform: translateX(100vw); }
+@keyframes pulseBorder {
+    0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+}
+
+/* Global Animated Classes mapped to JSX Components */
+.page-fade-in {
+    animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.sidebar-fade-in {
+    animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.card-animated {
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.card-animated:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -4px rgba(0, 0, 0, 0.08);
+    border-color: #cbd5e1 !important;
+}
+
+.btn-animated {
+    transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+.btn-animated:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.btn-animated:active {
+    transform: translateY(1px);
+}
+
+.sidebar-item-animated {
+    transition: all 0.2s ease;
+}
+.sidebar-item-animated:hover {
+    transform: translateX(4px);
+    background-color: #1e293b !important;
+    color: #3b82f6 !important;
+}
+
+.input-animated {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.input-animated:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+.mcq-option-animated {
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mcq-option-animated:hover {
+    background-color: #1e293b !important;
+    border-color: #4b5563 !important;
+    transform: translateX(3px);
         }
-        @keyframes legSwingLeft {
-          0%, 100% { transform: rotate(-25deg); }
-          50% { transform: rotate(25deg); }
-        }
-        @keyframes legSwingRight {
-          0%, 100% { transform: rotate(25deg); }
-          50% { transform: rotate(-25deg); }
-        }
-        @keyframes bodyBob {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
-        }
-      `}</style>
+/* ==================== OFFICE WALKER ANIMATION ==================== */
+@keyframes walkAcrossScreen {
+  0% { transform: translateX(-160px); }
+  100% { transform: translateX(100vw); }
+}
 
-      {/* 2. Self-Contained Office Walker Layer (Forced to Absolute Front via z-50) */}
-      <div 
-        className="fixed bottom-10 left-0 w-[60px] h-[110px] pointer-events-none z-50"
-        style={{ animation: 'walkAcrossScreen 12s linear infinite' }}
-      >
-        {/* Head */}
-        <div 
-          className="w-6 h-6 bg-gray-700 rounded-full absolute top-0 left-[18px]" 
-          style={{ animation: 'bodyBob 0.6s infinite ease-in-out' }}
-        />
-        {/* Body Suit */}
-        <div 
-          className="w-5 h-[45px] bg-blue-900 rounded-[4px] absolute top-[26px] left-5" 
-          style={{ animation: 'bodyBob 0.6s infinite ease-in-out' }}
-        />
-        {/* Briefcase Bag */}
-        <div className="w-6 h-[18px] bg-amber-900 rounded-[3px] absolute top-[48px] left-8 shadow-md">
-          {/* Handle */}
-          <div className="w-[10px] h-1 border-2 border-amber-900 border-b-0 rounded-t-[3px] absolute -top-[4px] left-[7px]" />
-        </div>
-        {/* Walking Legs */}
-        <div 
-          className="w-1.5 h-[38px] bg-gray-900 absolute top-[68px] rounded-[3px] origin-top left-[21px]" 
-          style={{ animation: 'legSwingLeft 0.6s infinite linear' }}
-        />
-        <div 
-          className="w-1.5 h-[38px] bg-gray-900 absolute top-[68px] rounded-[3px] origin-top left-[29px]" 
-          style={{ animation: 'legSwingRight 0.6s infinite linear' }}
-        />
-      </div>
+@keyframes legSwingLeft {
+  0%, 100% { transform: rotate(-25deg); }
+  50% { transform: rotate(25deg); }
+}
 
-      {/* 3. Main Login Application Viewports */}
-      <div className="flex w-full h-full overflow-x-hidden snap-x snap-mandatory" ref={scrollContainerRef}>
-        
-        {/* ================= PANEL 1: STUDENT PORTAL ================= */}
-        <div className="min-w-full h-full bg-gray-100 flex justify-center items-center snap-start">
-          <div className="bg-white p-[30px] rounded-xl shadow-md w-[380px]">
-            <div className="text-center mb-6">
-              <h2 className="text-gray-800 text-2xl font-bold mb-1">Student Portal</h2>
-              <p className="text-gray-500 text-xs tracking-wider uppercase">Online Examination Terminal</p>
-            </div>
+@keyframes legSwingRight {
+  0%, 100% { transform: rotate(25deg); }
+  50% { transform: rotate(-25deg); }
+}
 
-            {error && !isAdminRegister && (
-              <div className="bg-red-100 text-red-600 p-2.5 rounded-md mb-4 text-sm text-center">⚠️ {error}</div>
-            )}
+@keyframes bodyBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
 
-            <form onSubmit={(e) => handleAuth(e, 'student', isStudentRegister)} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Student Email</label>
-                <input 
-                  type="email" 
-                  placeholder="student@university.com" 
-                  value={studentEmail}
-                  onChange={e => setStudentEmail(e.target.value)}
-                  required 
-                  className="p-2.5 rounded-md border border-gray-300 text-sm w-full outline-none focus:border-blue-500"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Password</label>
-                <input 
-                  type="password" 
-                  placeholder="••••••••" 
-                  value={studentPassword}
-                  onChange={e => setStudentPassword(e.target.value)}
-                  required 
-                  className="p-2.5 rounded-md border border-gray-300 text-sm w-full outline-none focus:border-blue-500"
-                />
-              </div>
+.pure-css-walker {
+  position: fixed;
+  bottom: 40px;
+  left: 0;
+  width: 60px;
+  height: 110px;
+  z-index: 99999;
+  pointer-events: none;
+  animation: walkAcrossScreen 12s linear infinite;
+}
 
-              <button type="submit" className="p-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer transition-colors">
-                {isStudentRegister ? 'Register Profile' : 'Secure Student Sign In'}
-              </button>
+.human-head {
+  width: 24px;
+  height: 24px;
+  background-color: #374151;
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  left: 18px;
+  animation: bodyBob 0.6s infinite ease-in-out;
+}
 
-              <div className="text-center mt-1">
-                <span onClick={() => setIsStudentRegister(!isStudentRegister)} className="text-xs text-blue-600 cursor-pointer underline">
-                  {isStudentRegister ? 'Already have an account? Sign In' : 'New student? Register Here'}
-                </span>
-              </div>
-            </form>
+.human-body {
+  width: 20px;
+  height: 45px;
+  background-color: #1e3a8a;
+  border-radius: 4px;
+  position: absolute;
+  top: 26px;
+  left: 20px;
+  animation: bodyBob 0.6s infinite ease-in-out;
+}
 
-            <div className="mt-6 pt-5 border-t border-gray-200 text-center">
-              <p className="text-xs text-gray-600 mb-2">Need administrative tools?</p>
-              <button type="button" onClick={() => scrollToPanel(1)} className="bg-transparent border-none text-gray-600 hover:text-gray-900 cursor-pointer font-semibold text-sm">
-                Slide to Admin Console ➔
-              </button>
-            </div>
-          </div>
-        </div>
+.office-bag {
+  width: 24px;
+  height: 18px;
+  background-color: #78350f;
+  border-radius: 3px;
+  position: absolute;
+  top: 48px;
+  left: 32px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
 
-        {/* ================= PANEL 2: ADMIN SYSTEM CONSOLE ================= */}
-        <div className="min-w-full h-full bg-gray-900 flex justify-center items-center snap-start">
-          <div className="bg-gray-800 border border-gray-700 p-[30px] rounded-xl shadow-md w-[380px]">
-            <div className="text-center mb-6">
-              <h2 className="text-gray-50 font-bold text-2xl mb-1">Admin Console</h2>
-              <p className="text-gray-400 text-xs tracking-wider uppercase">Secure Infrastructure Access</p>
-            </div>
+.office-bag-handle {
+  width: 10px;
+  height: 5px;
+  border: 2px solid #78350f;
+  border-bottom: none;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  position: absolute;
+  top: -4px;
+  left: 7px;
+}
 
-            {error && isAdminRegister && (
-              <div className="bg-red-100 text-red-600 p-2.5 rounded-md mb-4 text-sm text-center">⚠️ {error}</div>
-            )}
+.human-leg {
+  width: 6px;
+  height: 38px;
+  background-color: #111827;
+  position: absolute;
+  top: 68px;
+  border-radius: 3px;
+  transform-origin: top center;
+}
 
-            <form onSubmit={(e) => handleAuth(e, 'admin', isAdminRegister)} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-300">Admin Email</label>
-                <input 
-                  type="email" 
-                  placeholder="admin@university.com" 
-                  value={adminEmail}
-                  onChange={e => setAdminEmail(e.target.value)}
-                  required 
-                  className="p-2.5 rounded-md border border-gray-600 bg-gray-700 text-white text-sm w-full outline-none focus:border-emerald-500"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-300">Password</label>
-                <input 
-                  type="password" 
-                  placeholder="••••••••" 
-                  value={adminPassword}
-                  onChange={e => setAdminPassword(e.target.value)}
-                  required 
-                  className="p-2.5 rounded-md border border-gray-600 bg-gray-700 text-white text-sm w-full outline-none focus:border-emerald-500"
-                />
-              </div>
+.leg-left {
+  left: 21px;
+  animation: legSwingLeft 0.6s infinite linear;
+}
 
-              {isAdminRegister && (
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-red-400">Master Admin Email Verification</label>
-                  <input 
-                    type="email" 
-                    placeholder="existing.admin@university.com" 
-                    value={masterAdminEmail}
-                    onChange={e => setMasterAdminEmail(e.target.value)}
-                    required 
-                    className="p-2.5 rounded-md border border-red-500 bg-gray-700 text-white text-sm w-full outline-none"
-                  />
-                </div>
-              )}
-
-              <button type="submit" className="p-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer transition-colors">
-                {isAdminRegister ? 'Deploy New Admin' : 'Secure Admin Login'}
-              </button>
-
-              <div className="text-center mt-1">
+.leg-right {
+  left: 29px;
+  animation: legSwingRight 0.6s infinite linear;
+}
