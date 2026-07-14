@@ -1,29 +1,24 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const IndexPortal = () => {
   const navigate = useNavigate();
+  
+  // Tracking current active panel pane view (0 = Student Portal, 1 = Admin Console)
+  const [activePanel, setActivePanel] = useState(0);
+
+  // Student Authentication States
   const [studentEmail, setStudentEmail] = useState('');
   const [studentPassword, setStudentPassword] = useState('');
   const [isStudentRegister, setIsStudentRegister] = useState(false);
 
+  // Admin Authentication States
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [masterAdminEmail, setMasterAdminEmail] = useState(''); 
   const [isAdminRegister, setIsAdminRegister] = useState(false);
 
   const [error, setError] = useState('');
-  const scrollContainerRef = useRef(null);
-
-  const scrollToPanel = (panelIndex) => {
-    setError('');
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({
-        left: panelIndex * scrollContainerRef.current.clientWidth,
-        behavior: 'smooth'
-      });
-    }
-  };
 
   const handleAuth = (e, type, isRegister) => {
     e.preventDefault();
@@ -50,9 +45,15 @@ const IndexPortal = () => {
 
   return (
     <div style={styles.viewWindow} className="page-fade-in">
-      <div style={styles.scrollWrapper} ref={scrollContainerRef}>
+      {/* Dynamic transform-driven slider tracks horizontal panes based on active state */}
+      <div 
+        style={{ 
+          ...styles.scrollWrapper, 
+          transform: `translateX(-${activePanel * 50}%)` 
+        }}
+      >
         
-        {/* STUDENT PORTAL */}
+        {/* PANEL ROW 1: STUDENT PORTAL CONTAINER */}
         <div style={styles.panelPageLight}>
           <div style={styles.card} className="card-animated">
             <div style={styles.header}>
@@ -60,7 +61,7 @@ const IndexPortal = () => {
               <p style={{ color: '#6b7280', fontSize: '12px', margin: 0, textTransform: 'uppercase' }}>Online Examination Terminal</p>
             </div>
 
-            {error && !isAdminRegister && <div style={styles.errorAlert}>⚠️ {error}</div>}
+            {error && activePanel === 0 && <div style={styles.errorAlert}>⚠️ {error}</div>}
 
             <form onSubmit={(e) => handleAuth(e, 'student', isStudentRegister)} style={styles.form}>
               <div style={styles.inputGroup}>
@@ -101,14 +102,19 @@ const IndexPortal = () => {
 
             <div style={styles.switchTerminalBox}>
               <p style={{ fontSize: '13px', color: '#4b5563', margin: '0 0 8px 0' }}>Need administrative tools?</p>
-              <button type="button" onClick={() => scrollToPanel(1)} style={styles.slideNextBtn} className="btn-animated">
+              <button 
+                type="button" 
+                onClick={() => { setError(''); setActivePanel(1); }} 
+                style={styles.slideNextBtn} 
+                className="btn-animated"
+              >
                 Slide to Admin Console ➔
               </button>
             </div>
           </div>
         </div>
 
-        {/* ADMIN PORTAL */}
+        {/* PANEL ROW 2: ADMIN CONSOLE CONTAINER */}
         <div style={styles.panelPageDark}>
           <div style={{ ...styles.card, backgroundColor: '#1f2937', border: '1px solid #374151' }} className="card-animated">
             <div style={styles.header}>
@@ -116,7 +122,7 @@ const IndexPortal = () => {
               <p style={{ color: '#9ca3af', fontSize: '12px', margin: 0, textTransform: 'uppercase' }}>Secure Infrastructure Access</p>
             </div>
 
-            {error && isAdminRegister && <div style={styles.errorAlert}>⚠️ {error}</div>}
+            {error && activePanel === 1 && <div style={styles.errorAlert}>⚠️ {error}</div>}
 
             <form onSubmit={(e) => handleAuth(e, 'admin', isAdminRegister)} style={styles.form}>
               <div style={styles.inputGroup}>
@@ -172,7 +178,12 @@ const IndexPortal = () => {
 
             <div style={{ ...styles.switchTerminalBox, borderTop: '1px solid #374151' }}>
               <p style={{ fontSize: '13px', color: '#9ca3af', margin: '0 0 8px 0' }}>Are you an academic student candidate?</p>
-              <button type="button" onClick={() => scrollToPanel(0)} style={{ ...styles.slideNextBtn, color: '#94a3b8', borderColor: '#4b5563' }} className="btn-animated">
+              <button 
+                type="button" 
+                onClick={() => { setError(''); setActivePanel(0); }} 
+                style={{ ...styles.slideNextBtn, color: '#94a3b8', borderColor: '#4b5563' }} 
+                className="btn-animated"
+              >
                 🪟 Return to Student Workspace View
               </button>
             </div>
@@ -186,9 +197,9 @@ const IndexPortal = () => {
 
 const styles = {
   viewWindow: { width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: '#f1f5f9' },
-  scrollWrapper: { display: 'flex', width: '200vw', height: '100%', overflow: 'hidden' },
-  panelPageLight: { width: '100vw', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' },
-  panelPageDark: { width: '100vw', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', backgroundColor: '#111827' },
+  scrollWrapper: { display: 'flex', width: '200vw', height: '100%', transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)' },
+  panelPageLight: { width: '50vw', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' },
+  panelPageDark: { width: '50vw', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', backgroundColor: '#111827' },
   card: { padding: '40px 30px', borderRadius: '16px', backgroundColor: '#fff', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', width: '100%', maxWidth: '420px' },
   header: { textAlign: 'center', marginBottom: '24px' },
   form: { display: 'flex', flexDirection: 'column', gap: '18px' },
@@ -197,14 +208,14 @@ const styles = {
   labelDark: { fontSize: '12px', fontWeight: 'bold', color: '#9ca3af' },
   lightInput: { padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', outline: 'none', color: '#1f2937' },
   darkInput: { padding: '12px', border: '1px solid #4b5563', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: '#374151', color: '#fff' },
-  studentBtn: { backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', outline: 'none' },
-  adminBtn: { backgroundColor: '#4f46e5', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', outline: 'none' },
+  studentBtn: { backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', outline: 'none', cursor: 'pointer' },
+  adminBtn: { backgroundColor: '#4f46e5', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', outline: 'none', cursor: 'pointer' },
   toggleRow: { textAlign: 'center', marginTop: '5px' },
   linkLight: { fontSize: '13px', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' },
   linkDark: { fontSize: '13px', color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline' },
   switchTerminalBox: { borderTop: '1px solid #e5e7eb', marginTop: '25px', paddingTop: '20px', textAlign: 'center' },
-  slideNextBtn: { background: 'none', border: '1px solid #cbd5e1', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', color: '#4b5563', fontSize: '13px', outline: 'none' },
-  errorAlert: { padding: '12px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', fontSize: '13px', borderRadius: '8px', textAlign: 'center', fontWeight: '500' }
+  slideNextBtn: { background: 'none', border: '1px solid #cbd5e1', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', color: '#4b5563', fontSize: '13px', outline: 'none', cursor: 'pointer' },
+  errorAlert: { padding: '12px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', fontSize: '13px', borderRadius: '8px', textAlign: 'center', fontWeight: '500', marginBottom: '10px' }
 };
 
 export default IndexPortal;
