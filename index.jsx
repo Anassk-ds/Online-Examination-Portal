@@ -4,17 +4,18 @@ import { useNavigate } from 'react-router-dom';
 const IndexPortal = () => {
   const navigate = useNavigate();
   
-  // 0 = Student Portal View, 1 = Admin Console View
+  // 0 = Student Portal Active State, 1 = Admin Console Active State
   const [activePanel, setActivePanel] = useState(0);
-  // Controls when the walking animation state is active
-  const [isWalking, setIsWalking] = useState(false);
+  
+  // Animation Phases: 'idle' (waiting), 'walking' (moving to center), 'arrived' (stopped at center)
+  const [animPhase, setAnimPhase] = useState('idle');
 
-  // Student Authentication States
+  // Student Authentication Inputs
   const [studentEmail, setStudentEmail] = useState('');
   const [studentPassword, setStudentPassword] = useState('');
   const [isStudentRegister, setIsStudentRegister] = useState(false);
 
-  // Admin Authentication States
+  // Admin Authentication Inputs
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [masterAdminEmail, setMasterAdminEmail] = useState(''); 
@@ -22,16 +23,22 @@ const IndexPortal = () => {
 
   const [error, setError] = useState('');
 
-  // Triggers the walk to center before switching forms
-  const triggerPanelSwitch = (targetPanel) => {
+  // Executes the exact sequence: Fade form out -> Walk to Center -> Stop & Transform -> Fade new form in
+  const startWalkingSequence = (targetPanel) => {
     setError('');
-    setIsWalking(true); // Start the walking animation sequence
-    
-    // After 1.2 seconds (when the man reaches the center), flip the panel view
+    setAnimPhase('walking');
+
+    // Step 2: Exactly at 1.4 seconds, the man arrives at the center and halts. 
+    // The background color transforms instantly underneath him.
     setTimeout(() => {
+      setAnimPhase('arrived');
       setActivePanel(targetPanel);
-      setIsWalking(false); // Reset animation state for next click
-    }, 1200);
+    }, 1400);
+
+    // Step 3: Let him stand still at the center briefly before resetting back to standard layout
+    setTimeout(() => {
+      setAnimPhase('idle');
+    }, 2400);
   };
 
   const handleAuth = (e, type, isRegister) => {
@@ -63,208 +70,268 @@ const IndexPortal = () => {
       backgroundColor: activePanel === 0 ? '#f0fdf4' : '#0f172a'
     }}>
       
-      {/* Injecting Live CSS Animations for the Walking Sequence directly into the DOM */}
+      {/* Injecting Live Walking and Bobbing Animation Sequences directly into the DOM */}
       <style>{`
-        @keyframes walkToCenter {
-          0% { transform: translateX(0px); }
-          50% { transform: translateX(120px) translateY(-10px); }
-          100% { transform: translateX(240px) translateY(0px); }
+        @keyframes dynamicBobbing {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          25% { transform: translateY(-8px) rotate(-2deg); }
+          75% { transform: translateY(-8px) rotate(2deg); }
         }
-        @keyframes walkBackToCenter {
-          0% { transform: translateX(0px); }
-          50% { transform: translateX(-120px) translateY(-10px); }
-          100% { transform: translateX(-240px) translateY(0px); }
+        @keyframes walkToCenterRight {
+          0% { left: 10%; transform: scaleX(1); }
+          100% { left: 50%; transform: scaleX(1) translateX(-50%); }
         }
-        .animate-student-walk {
-          animation: walkToCenter 1.2s cubic-bezier(0.45, 0, 0.55, 1) forwards;
+        @keyframes walkToCenterLeft {
+          0% { left: 90%; transform: scaleX(-1); }
+          100% { left: 50%; transform: scaleX(-1) translateX(50%); }
         }
-        .animate-admin-walk {
-          animation: walkBackToCenter 1.2s cubic-bezier(0.45, 0, 0.55, 1) forwards;
+        
+        .man-bobbing-loop {
+          animation: dynamicBobbing 0.35s infinite ease-in-out;
+        }
+        .stage-walk-right {
+          position: absolute;
+          top: 30%;
+          animation: walkToCenterRight 1.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .stage-walk-left {
+          position: absolute;
+          top: 30%;
+          animation: walkToCenterLeft 1.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .stage-stopped-center {
+          position: absolute;
+          top: 30%;
+          left: 50%;
+          transform: translateX(-50%);
+          transition: all 0.3s ease;
+        }
+        .fade-out-card {
+          opacity: 0;
+          transform: scale(0.95);
+          pointer-events: none;
+          transition: all 0.4s ease;
+        }
+        .fade-in-card {
+          opacity: 1;
+          transform: scale(1);
+          transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
       `}</style>
-      
-      <div style={styles.mainContainer}>
+
+      {/* ==========================================================================
+         CINEMATIC ANIMATION STAGE
+         ========================================================================== */}
+      {animPhase !== 'idle' ? (
+        <div style={styles.animationTrackLayer}>
+          <div className={
+            animPhase === 'walking' 
+              ? (activePanel === 0 ? 'stage-walk-right' : 'stage-walk-left') 
+              : 'stage-stopped-center'
+          }>
+            <div className={animPhase === 'walking' ? 'man-bobbing-loop' : ''}>
+              {activePanel === 0 ? (
+                /* STUDENT CHARACTER WALK VERSION */
+                <svg width="240" height="240" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="100" cy="100" r="65" fill="#dcfce7" />
+                  <path d="M75 160 C75 125, 125 125, 125 160" fill="#10b981" />
+                  <circle cx="100" cy="90" r="24" fill="#fbcfe8" />
+                  <path d="M78 82 C84 72, 116 72, 122 82 C112 76, 88 76, 78 82" fill="#1e293b" />
+                  {/* Leg 1 */}
+                  <rect x="88" y="160" width="8" height="25" rx="3" fill="#1e293b" />
+                  {/* Leg 2 */}
+                  <rect x="104" y="160" width="8" height="25" rx="3" fill="#1e293b" />
+                  {/* Student Clipboard Form */}
+                  <rect x="122" y="110" width="36" height="46" rx="4" fill="#ffffff" stroke="#10b981" strokeWidth="3"/>
+                </svg>
+              ) : (
+                /* ADMIN CHARACTER WALK VERSION WITH OFFICE BAG */
+                <svg width="240" height="240" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="100" cy="100" r="65" fill="#334155" />
+                  <path d="M75 160 C75 125, 125 125, 125 160" fill="#4f46e5" />
+                  <circle cx="100" cy="90" r="24" fill="#fed7aa" />
+                  <path d="M78 82 C84 72, 116 72, 122 82 C112 76, 88 76, 78 82" fill="#451a03" />
+                  <path d="M96 125 L104 125 L102 142 L98 142 Z" fill="#ef4444" />
+                  {/* Leg 1 */}
+                  <rect x="88" y="160" width="8" height="25" rx="3" fill="#0f172a" />
+                  {/* Leg 2 */}
+                  <rect x="104" y="160" width="8" height="25" rx="3" fill="#0f172a" />
+                  {/* Office Portfolio Briefcase Bag */}
+                  <rect x="122" y="122" width="44" height="32" rx="5" fill="#78350f" stroke="#f59e0b" strokeWidth="2"/>
+                  <path d="M134 122 L134 116 C134 114, 154 114, 154 116 L154 122" stroke="#f59e0b" strokeWidth="2" fill="none"/>
+                </svg>
+              )}
+            </div>
+            <h2 style={{
+              textAlign: 'center',
+              marginTop: '10px',
+              color: activePanel === 0 ? '#047857' : '#818cf8',
+              fontFamily: 'sans-serif'
+            }}>
+              {animPhase === 'walking' ? 'Moving to Interface...' : 'Authorization Ready.'}
+            </h2>
+          </div>
+        </div>
+      ) : (
         
-        {/* ================= LEFT SIDE: DYNAMIC GRAPHIC AREA ================= */}
-        <div style={styles.graphicColumn}>
-          <div className={isWalking ? (activePanel === 0 ? 'animate-student-walk' : 'animate-admin-walk') : ''}>
-            {activePanel === 0 ? (
-              /* STUDENT MAN WITH A FORM */
-              <svg width="260" height="260" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="100" cy="100" r="70" fill="#dcfce7" />
-                <path d="M70 150 C70 120, 130 120, 130 150" fill="#10b981" />
-                <circle cx="100" cy="90" r="22" fill="#fbcfe8" />
-                <path d="M80 80 C85 70, 115 70, 120 80 C110 75, 90 75, 80 80" fill="#1e293b" />
-                {/* Form Clipboard */}
-                <rect x="120" y="105" width="40" height="50" rx="4" fill="#ffffff" stroke="#10b981" strokeWidth="3"/>
-                <rect x="128" y="115" width="24" height="4" fill="#cbd5e1" />
-                <rect x="128" y="125" width="24" height="4" fill="#cbd5e1" />
-                <circle cx="140" cy="140" r="3" fill="#10b981" />
-              </svg>
-            ) : (
-              /* ADMIN MAN WITH AN OFFICE BRIEFCASE BAG */
-              <svg width="260" height="260" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="100" cy="100" r="70" fill="#334155" />
-                <path d="M70 150 C70 120, 130 120, 130 150" fill="#4f46e5" />
-                <circle cx="100" cy="90" r="22" fill="#fed7aa" />
-                <path d="M80 80 C85 70, 115 70, 120 80 C110 75, 90 75, 80 80" fill="#451a03" />
-                <path d="M96 122 L104 122 L102 138 L98 138 Z" fill="#ef4444" />
-                {/* Briefcase/Office Bag */}
-                <rect x="120" y="118" width="46" height="34" rx="5" fill="#78350f" stroke="#f59e0b" strokeWidth="2"/>
-                <path d="M133 118 L133 112 C133 110, 153 110, 153 112 L153 118" stroke="#f59e0b" strokeWidth="2" fill="none"/>
-              </svg>
+        /* ==========================================================================
+           STANDARD SPLIT INTERFACE VIEWPORT
+           ========================================================================== */
+        <div style={styles.mainSplitGrid} className="fade-in-card">
+          
+          {/* LEFT COLUMN PANEL: STUDENT INTERFACE */}
+          <div style={styles.panelSplitSide}>
+            {activePanel === 0 && (
+              <div style={styles.panelContentWrapper}>
+                <div style={styles.graphicBox}>
+                  <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="65" fill="#dcfce7" />
+                    <path d="M75 160 C75 125, 125 125, 125 160" fill="#10b981" />
+                    <circle cx="100" cy="90" r="24" fill="#fbcfe8" />
+                    <rect x="122" y="110" width="36" height="46" rx="4" fill="#ffffff" stroke="#10b981" strokeWidth="3"/>
+                  </svg>
+                  <h3 style={{ color: '#047857', margin: '10px 0 0 0' }}>Student Workspace</h3>
+                </div>
+
+                <div style={styles.card}>
+                  <div style={styles.header}>
+                    <h2 style={{ color: '#1f2937', margin: '0 0 5px 0' }}>Student Portal</h2>
+                    <p style={{ color: '#6b7280', fontSize: '11px', margin: 0, textTransform: 'uppercase' }}>Online Examination Terminal</p>
+                  </div>
+
+                  {error && <div style={styles.errorAlert}>⚠️ {error}</div>}
+
+                  <form onSubmit={(e) => handleAuth(e, 'student', isStudentRegister)} style={styles.form}>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.labelLight}>Student Email</label>
+                      <input 
+                        type="email" 
+                        placeholder="student@university.com" 
+                        value={studentEmail}
+                        onChange={e => setStudentEmail(e.target.value)}
+                        required 
+                        style={styles.lightInput}
+                      />
+                    </div>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.labelLight}>Password</label>
+                      <input 
+                        type="password" 
+                        placeholder="••••••••" 
+                        value={studentPassword}
+                        onChange={e => setStudentPassword(e.target.value)}
+                        required 
+                        style={styles.lightInput}
+                      />
+                    </div>
+
+                    <button type="submit" style={styles.studentBtn}>
+                      {isStudentRegister ? 'Register Profile' : 'Secure Student Sign In'}
+                    </button>
+
+                    <div style={styles.toggleRow}>
+                      <span onClick={() => setIsStudentRegister(!isStudentRegister)} style={styles.linkLight}>
+                        {isStudentRegister ? 'Already have an account? Sign In' : 'New student? Register Here'}
+                      </span>
+                    </div>
+                  </form>
+
+                  <div style={styles.switchTerminalBox}>
+                    <p style={{ fontSize: '12px', color: '#4b5563', margin: '0 0 8px 0' }}>Need administrative tools?</p>
+                    <button type="button" onClick={() => startWalkingSequence(1)} style={styles.slideNextBtn}>
+                      Slide to Admin Console ➔
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
-          <h3 style={{ 
-            color: activePanel === 0 ? '#047857' : '#818cf8', 
-            marginTop: '15px',
-            transition: 'color 0.5s ease'
-          }}>
-            {activePanel === 0 ? 'Student Entry Terminal' : 'Infrastructure Control Layer'}
-          </h3>
-        </div>
 
-        {/* ================= RIGHT SIDE: DYNAMIC AUTH PORTAL ================= */}
-        <div style={styles.cardColumn}>
-          {activePanel === 0 ? (
-            /* STUDENT LOGIN/REGISTER FORM */
-            <div style={styles.card} className="card-animated">
-              <div style={styles.header}>
-                <h2 style={{ color: '#1f2937', margin: '0 0 5px 0' }}>Student Portal</h2>
-                <p style={{ color: '#6b7280', fontSize: '12px', margin: 0, textTransform: 'uppercase' }}>Online Examination Terminal</p>
-              </div>
-
-              {error && <div style={styles.errorAlert}>⚠️ {error}</div>}
-
-              <form onSubmit={(e) => handleAuth(e, 'student', isStudentRegister)} style={styles.form}>
-                <div style={styles.inputGroup}>
-                  <label style={styles.labelLight}>Student Email</label>
-                  <input 
-                    type="email" 
-                    placeholder="student@university.com" 
-                    value={studentEmail}
-                    onChange={e => setStudentEmail(e.target.value)}
-                    required 
-                    style={styles.lightInput}
-                    className="input-animated"
-                  />
-                </div>
-                <div style={styles.inputGroup}>
-                  <label style={styles.labelLight}>Password</label>
-                  <input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    value={studentPassword}
-                    onChange={e => setStudentPassword(e.target.value)}
-                    required 
-                    style={styles.lightInput}
-                    className="input-animated"
-                  />
+          {/* RIGHT COLUMN PANEL: ADMIN INTERFACE */}
+          <div style={styles.panelSplitSide}>
+            {activePanel === 1 && (
+              <div style={styles.panelContentWrapper}>
+                <div style={styles.graphicBox}>
+                  <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="65" fill="#334155" />
+                    <path d="M75 160 C75 125, 125 125, 125 160" fill="#4f46e5" />
+                    <circle cx="100" cy="90" r="24" fill="#fed7aa" />
+                    <path d="M96 125 L104 125 L102 142 L98 142 Z" fill="#ef4444" />
+                    <rect x="122" y="122" width="44" height="32" rx="5" fill="#78350f" stroke="#f59e0b" strokeWidth="2"/>
+                  </svg>
+                  <h3 style={{ color: '#818cf8', margin: '10px 0 0 0' }}>Admin Console</h3>
                 </div>
 
-                <button type="submit" style={styles.studentBtn} className="btn-animated">
-                  {isStudentRegister ? 'Register Profile' : 'Secure Student Sign In'}
-                </button>
-
-                <div style={styles.toggleRow}>
-                  <span onClick={() => setIsStudentRegister(!isStudentRegister)} style={styles.linkLight} className="btn-animated">
-                    {isStudentRegister ? 'Already have an account? Sign In' : 'New student? Register Here'}
-                  </span>
-                </div>
-              </form>
-
-              <div style={styles.switchTerminalBox}>
-                <p style={{ fontSize: '13px', color: '#4b5563', margin: '0 0 8px 0' }}>Need administrative tools?</p>
-                <button 
-                  type="button" 
-                  onClick={() => triggerPanelSwitch(1)} 
-                  style={styles.slideNextBtn} 
-                  className="btn-animated"
-                  disabled={isWalking}
-                >
-                  Slide to Admin Console ➔
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* ADMIN INFRASTRUCTURE FORM */
-            <div style={{ ...styles.card, backgroundColor: '#1e293b', border: '1px solid #334155' }} className="card-animated">
-              <div style={styles.header}>
-                <h2 style={{ color: '#f8fafc', margin: '0 0 5px 0' }}>Admin Console</h2>
-                <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0, textTransform: 'uppercase' }}>Secure Infrastructure Access</p>
-              </div>
-
-              {error && <div style={styles.errorAlert}>⚠️ {error}</div>}
-
-              <form onSubmit={(e) => handleAuth(e, 'admin', isAdminRegister)} style={styles.form}>
-                <div style={styles.inputGroup}>
-                  <label style={styles.labelDark}>Admin Email</label>
-                  <input 
-                    type="email" 
-                    placeholder="admin@university.com" 
-                    value={adminEmail}
-                    onChange={e => setAdminEmail(e.target.value)}
-                    required 
-                    style={styles.darkInput}
-                    className="input-animated"
-                  />
-                </div>
-                <div style={styles.inputGroup}>
-                  <label style={styles.labelDark}>Password</label>
-                  <input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    value={adminPassword}
-                    onChange={e => setAdminPassword(e.target.value)}
-                    required 
-                    style={styles.darkInput}
-                    className="input-animated"
-                  />
-                </div>
-
-                {isAdminRegister && (
-                  <div style={styles.inputGroup}>
-                    <label style={styles.labelDark}>Master Admin Code Signature ID</label>
-                    <input 
-                      type="text" 
-                      placeholder="Verification Authority Key" 
-                      value={masterAdminEmail}
-                      onChange={e => setMasterAdminEmail(e.target.value)}
-                      required 
-                      style={styles.darkInput}
-                      className="input-animated"
-                    />
+                <div style={{ ...styles.card, backgroundColor: '#1e293b', border: '1px solid #334155' }}>
+                  <div style={styles.header}>
+                    <h2 style={{ color: '#f8fafc', margin: '0 0 5px 0' }}>Admin Console</h2>
+                    <p style={{ color: '#94a3b8', fontSize: '11px', margin: 0, textTransform: 'uppercase' }}>Secure Infrastructure Access</p>
                   </div>
-                )}
 
-                <button type="submit" style={styles.adminBtn} className="btn-animated">
-                  {isAdminRegister ? 'Provision Master Credentials' : 'Access System Terminal'}
-                </button>
+                  {error && <div style={styles.errorAlert}>⚠️ {error}</div>}
 
-                <div style={styles.toggleRow}>
-                  <span onClick={() => setIsAdminRegister(!isAdminRegister)} style={styles.linkDark} className="btn-animated">
-                    {isAdminRegister ? 'Return to Standard Admin Login' : 'Register New Supervisor Instance'}
-                  </span>
+                  <form onSubmit={(e) => handleAuth(e, 'admin', isAdminRegister)} style={styles.form}>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.labelDark}>Admin Email</label>
+                      <input 
+                        type="email" 
+                        placeholder="admin@university.com" 
+                        value={adminEmail}
+                        onChange={e => setAdminEmail(e.target.value)}
+                        required 
+                        style={styles.darkInput}
+                      />
+                    </div>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.labelDark}>Password</label>
+                      <input 
+                        type="password" 
+                        placeholder="••••••••" 
+                        value={adminPassword}
+                        onChange={e => setAdminPassword(e.target.value)}
+                        required 
+                        style={styles.darkInput}
+                      />
+                    </div>
+
+                    {isAdminRegister && (
+                      <div style={styles.inputGroup}>
+                        <label style={styles.labelDark}>Master Admin Code Signature ID</label>
+                        <input 
+                          type="text" 
+                          placeholder="Verification Authority Key" 
+                          value={masterAdminEmail}
+                          onChange={e => setMasterAdminEmail(e.target.value)}
+                          required 
+                          style={styles.darkInput}
+                        />
+                      </div>
+                    )}
+
+                    <button type="submit" style={styles.adminBtn}>
+                      {isAdminRegister ? 'Provision Master Credentials' : 'Access System Terminal'}
+                    </button>
+
+                    <div style={styles.toggleRow}>
+                      <span onClick={() => setIsAdminRegister(!isAdminRegister)} style={styles.linkDark}>
+                        {isAdminRegister ? 'Return to Standard Admin Login' : 'Register New Supervisor Instance'}
+                      </span>
+                    </div>
+                  </form>
+
+                  <div style={{ ...styles.switchTerminalBox, borderTop: '1px solid #334155' }}>
+                    <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 8px 0' }}>Are you an academic student candidate?</p>
+                    <button type="button" onClick={() => startWalkingSequence(0)} style={{ ...styles.slideNextBtn, color: '#cbd5e1', borderColor: '#4b5563' }}>
+                      🪟 Return to Student Workspace View
+                    </button>
+                  </div>
                 </div>
-              </form>
-
-              <div style={{ ...styles.switchTerminalBox, borderTop: '1px solid #334155' }}>
-                <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 8px 0' }}>Are you an academic student candidate?</p>
-                <button 
-                  type="button" 
-                  onClick={() => triggerPanelSwitch(0)} 
-                  style={{ ...styles.slideNextBtn, color: '#cbd5e1', borderColor: '#4b5563' }} 
-                  className="btn-animated"
-                  disabled={isWalking}
-                >
-                  🪟 Return to Student Workspace View
-                </button>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-      </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -274,60 +341,76 @@ const styles = {
     width: '100vw', 
     height: '100vh', 
     overflow: 'hidden', 
+    position: 'relative',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    transition: 'background-color 0.6s ease'
+    transition: 'background-color 0.5s ease'
   },
-  mainContainer: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '60px',
+  animationTrackLayer: {
+    position: 'absolute',
     width: '100%',
-    maxWidth: '1000px',
+    height: '100%',
+    top: 0,
+    left: 0,
+    zIndex: 10
+  },
+  mainSplitGrid: {
+    display: 'flex',
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  panelSplitSide: {
+    flex: 1,
+    height: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: '20px',
     boxSizing: 'border-box'
   },
-  graphicColumn: {
+  panelContentWrapper: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: '50px',
+    maxWidth: '900px',
+    width: '100%',
+    justifyContent: 'center'
+  },
+  graphicBox: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
-    width: '320px',
-    textAlign: 'center'
-  },
-  cardColumn: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '460px'
+    width: '260px'
   },
   card: { 
-    padding: '40px 35px', 
-    borderRadius: '24px', 
+    padding: '35px 30px', 
+    borderRadius: '20px', 
     backgroundColor: '#ffffff', 
-    boxShadow: '0 20px 40px -15px rgba(0,0,0,0.1)', 
+    boxShadow: '0 20px 40px -15px rgba(0,0,0,0.08)', 
     border: '1px solid #e2e8f0', 
     width: '100%', 
+    maxWidth: '420px', 
     boxSizing: 'border-box' 
   },
-  header: { textAlign: 'center', marginBottom: '24px' },
-  form: { display: 'flex', flexDirection: 'column', gap: '18px' },
-  inputGroup: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  header: { textAlign: 'center', marginBottom: '20px' },
+  form: { display: 'flex', flexDirection: 'column', gap: '15px' },
+  inputGroup: { display: 'flex', flexDirection: 'column', gap: '5px' },
   labelLight: { fontSize: '12px', fontWeight: 'bold', color: '#4b5563' },
   labelDark: { fontSize: '12px', fontWeight: 'bold', color: '#9ca3af' },
-  lightInput: { padding: '13px 16px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '14px', outline: 'none', color: '#1f2937', width: '100%', boxSizing: 'border-box' },
-  darkInput: { padding: '13px 16px', border: '1px solid #4b5563', borderRadius: '10px', fontSize: '14px', outline: 'none', backgroundColor: '#334155', color: '#fff', width: '100%', boxSizing: 'border-box' },
-  studentBtn: { backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '14px', borderRadius: '10px', fontSize: '14px', fontWeight: 'bold', outline: 'none', cursor: 'pointer', width: '100%' },
-  adminBtn: { backgroundColor: '#4f46e5', color: '#fff', border: 'none', padding: '14px', borderRadius: '10px', fontSize: '14px', fontWeight: 'bold', outline: 'none', cursor: 'pointer', width: '100%' },
-  toggleRow: { textAlign: 'center', marginTop: '5px' },
-  linkLight: { fontSize: '13px', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' },
-  linkDark: { fontSize: '13px', color: '#818cf8', cursor: 'pointer', textDecoration: 'underline' },
-  switchTerminalBox: { borderTop: '1px solid #e5e7eb', marginTop: '25px', paddingTop: '20px', textAlign: 'center' },
-  slideNextBtn: { background: 'none', border: '1px solid #cbd5e1', padding: '11px 18px', borderRadius: '10px', fontWeight: 'bold', color: '#4b5563', fontSize: '13px', outline: 'none', cursor: 'pointer' },
-  errorAlert: { padding: '12px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', fontSize: '13px', borderRadius: '8px', textAlign: 'center', fontWeight: '500', marginBottom: '10px' }
+  lightInput: { padding: '12px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', outline: 'none', color: '#1f2937', width: '100%', boxSizing: 'border-box' },
+  darkInput: { padding: '12px 14px', border: '1px solid #4b5563', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: '#334155', color: '#fff', width: '100%', boxSizing: 'border-box' },
+  studentBtn: { backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '13px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', width: '100%' },
+  adminBtn: { backgroundColor: '#4f46e5', color: '#fff', border: 'none', padding: '13px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', width: '100%' },
+  toggleRow: { textAlign: 'center', marginTop: '4px' },
+  linkLight: { fontSize: '12px', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' },
+  linkDark: { fontSize: '12px', color: '#818cf8', cursor: 'pointer', textDecoration: 'underline' },
+  switchTerminalBox: { borderTop: '1px solid #e5e7eb', marginTop: '20px', paddingTop: '15px', textAlign: 'center' },
+  slideNextBtn: { background: 'none', border: '1px solid #cbd5e1', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', color: '#4b5563', fontSize: '12px', cursor: 'pointer' },
+  errorAlert: { padding: '10px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', fontSize: '12px', borderRadius: '6px', textAlign: 'center', marginBottom: '10px' }
 };
 
 export default IndexPortal;
