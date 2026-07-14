@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const AdminPanel = ({ navigateTo }) => {
+const AdminPanel = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({ examsConducted: 0, registeredStudents: 0 });
   const [submissions, setSubmissions] = useState([]); 
   const [loading, setLoading] = useState(true);
@@ -100,11 +102,7 @@ const AdminPanel = ({ navigateTo }) => {
 
   const handleLogout = () => {
     localStorage.clear();
-    if (navigateTo) {
-      navigateTo('/');
-    } else {
-      window.location.href = '/';
-    }
+    navigate('/');
   };
 
   if (loading) return <div style={styles.loadingScreen}>🔄 Fetching Admin Control Metrics...</div>;
