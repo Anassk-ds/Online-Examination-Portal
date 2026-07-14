@@ -9,7 +9,7 @@ const IndexPortal = ({ navigateTo }) => {
   // Admin States
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
-  const [masterAdminEmail, setMasterAdminEmail] = useState(''); // Strict Verification Requirement
+  const [masterAdminEmail, setMasterAdminEmail] = useState('');
   const [isAdminRegister, setIsAdminRegister] = useState(false);
 
   // UI Status Alerts
@@ -39,7 +39,6 @@ const IndexPortal = ({ navigateTo }) => {
       return setError('Please fill in all secure authentication inputs.');
     }
 
-    // Security check for admin registration
     if (type === 'admin' && isRegister && !masterAdminEmail.trim()) {
       return setError('Access Denied: Master Admin email verification signature required.');
     }
@@ -55,8 +54,9 @@ const IndexPortal = ({ navigateTo }) => {
   };
 
   return (
-    <div style={styles.viewWindow}>
-      {/* 100% Reliable Injected CSS Animations & Body Parts */}
+    <div className="w-screen h-screen overflow-hidden relative font-sans">
+      
+      {/* 1. Global CSS Injector for Leg and Body Movement Keyframes */}
       <style>{`
         @keyframes walkAcrossScreen {
           0% { transform: translateX(-160px); }
@@ -74,137 +74,92 @@ const IndexPortal = ({ navigateTo }) => {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-4px); }
         }
-        .pure-css-walker {
-          position: fixed;
-          bottom: 40px;
-          left: 0;
-          width: 60px;
-          height: 110px;
-          z-index: 99999; /* Forced to the absolute front layer */
-          pointer-events: none;
-          animation: walkAcrossScreen 12s linear infinite;
-        }
-        .human-head {
-          width: 24px;
-          height: 24px;
-          background-color: #374151;
-          border-radius: 50%;
-          position: absolute;
-          top: 0;
-          left: 18px;
-          animation: bodyBob 0.6s infinite ease-in-out;
-        }
-        .human-body {
-          width: 20px;
-          height: 45px;
-          background-color: #1e3a8a; /* Formal blue suit jacket color */
-          border-radius: 4px;
-          position: absolute;
-          top: 26px;
-          left: 20px;
-          animation: bodyBob 0.6s infinite ease-in-out;
-        }
-        .office-bag {
-          width: 24px;
-          height: 18px;
-          background-color: #78350f; /* Brown leather briefcase color */
-          border-radius: 3px;
-          position: absolute;
-          top: 48px;
-          left: 32px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        .office-bag-handle {
-          width: 10px;
-          height: 5px;
-          border: 2px solid #78350f;
-          border-bottom: none;
-          border-top-left-radius: 3px;
-          border-top-right-radius: 3px;
-          position: absolute;
-          top: -5px;
-          left: 7px;
-        }
-        .human-leg {
-          width: 6px;
-          height: 38px;
-          background-color: #111827;
-          position: absolute;
-          top: 68px;
-          border-radius: 3px;
-          transform-origin: top center;
-        }
-        .leg-left {
-          left: 21px;
-          animation: legSwingLeft 0.6s infinite linear;
-        }
-        .leg-right {
-          left: 29px;
-          animation: legSwingRight 0.6s infinite linear;
-        }
       `}</style>
 
-      {/* Pure CSS Character Markup - Completely self-contained container */}
-      <div className="pure-css-walker">
-        <div className="human-head"></div>
-        <div className="human-body"></div>
-        <div className="office-bag">
-          <div className="office-bag-handle"></div>
+      {/* 2. Self-Contained Office Walker Layer (Forced to Absolute Front via z-50) */}
+      <div 
+        className="fixed bottom-10 left-0 w-[60px] h-[110px] pointer-events-none z-50"
+        style={{ animation: 'walkAcrossScreen 12s linear infinite' }}
+      >
+        {/* Head */}
+        <div 
+          className="w-6 h-6 bg-gray-700 rounded-full absolute top-0 left-[18px]" 
+          style={{ animation: 'bodyBob 0.6s infinite ease-in-out' }}
+        />
+        {/* Body Suit */}
+        <div 
+          className="w-5 h-[45px] bg-blue-900 rounded-[4px] absolute top-[26px] left-5" 
+          style={{ animation: 'bodyBob 0.6s infinite ease-in-out' }}
+        />
+        {/* Briefcase Bag */}
+        <div className="w-6 h-[18px] bg-amber-900 rounded-[3px] absolute top-[48px] left-8 shadow-md">
+          {/* Handle */}
+          <div className="w-[10px] h-1 border-2 border-amber-900 border-b-0 rounded-t-[3px] absolute -top-[4px] left-[7px]" />
         </div>
-        <div className="human-leg leg-left"></div>
-        <div className="human-leg leg-right"></div>
+        {/* Walking Legs */}
+        <div 
+          className="w-1.5 h-[38px] bg-gray-900 absolute top-[68px] rounded-[3px] origin-top left-[21px]" 
+          style={{ animation: 'legSwingLeft 0.6s infinite linear' }}
+        />
+        <div 
+          className="w-1.5 h-[38px] bg-gray-900 absolute top-[68px] rounded-[3px] origin-top left-[29px]" 
+          style={{ animation: 'legSwingRight 0.6s infinite linear' }}
+        />
       </div>
 
-      <div style={styles.scrollWrapper} ref={scrollContainerRef}>
+      {/* 3. Main Login Application Viewports */}
+      <div className="flex w-full h-full overflow-x-hidden snap-x snap-mandatory" ref={scrollContainerRef}>
         
         {/* ================= PANEL 1: STUDENT PORTAL ================= */}
-        <div style={styles.panelPageLight}>
-          <div style={styles.card}>
-            <div style={styles.header}>
-              <h2 style={{ color: '#1f2937', margin: '0 0 5px 0' }}>Student Portal</h2>
-              <p style={{ color: '#6b7280', fontSize: '12px', margin: 0, textTransform: 'uppercase' }}>Online Examination Terminal</p>
+        <div className="min-w-full h-full bg-gray-100 flex justify-center items-center snap-start">
+          <div className="bg-white p-[30px] rounded-xl shadow-md w-[380px]">
+            <div className="text-center mb-6">
+              <h2 className="text-gray-800 text-2xl font-bold mb-1">Student Portal</h2>
+              <p className="text-gray-500 text-xs tracking-wider uppercase">Online Examination Terminal</p>
             </div>
 
-            {error && !isAdminRegister && <div style={styles.errorAlert}>⚠️ {error}</div>}
+            {error && !isAdminRegister && (
+              <div className="bg-red-100 text-red-600 p-2.5 rounded-md mb-4 text-sm text-center">⚠️ {error}</div>
+            )}
 
-            <form onSubmit={(e) => handleAuth(e, 'student', isStudentRegister)} style={styles.form}>
-              <div style={styles.inputGroup}>
-                <label style={styles.labelLight}>Student Email</label>
+            <form onSubmit={(e) => handleAuth(e, 'student', isStudentRegister)} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-700">Student Email</label>
                 <input 
                   type="email" 
                   placeholder="student@university.com" 
                   value={studentEmail}
                   onChange={e => setStudentEmail(e.target.value)}
                   required 
-                  style={styles.lightInput}
+                  className="p-2.5 rounded-md border border-gray-300 text-sm w-full outline-none focus:border-blue-500"
                 />
               </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.labelLight}>Password</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-700">Password</label>
                 <input 
                   type="password" 
                   placeholder="••••••••" 
                   value={studentPassword}
                   onChange={e => setStudentPassword(e.target.value)}
                   required 
-                  style={styles.lightInput}
+                  className="p-2.5 rounded-md border border-gray-300 text-sm w-full outline-none focus:border-blue-500"
                 />
               </div>
 
-              <button type="submit" style={styles.studentBtn}>
+              <button type="submit" className="p-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer transition-colors">
                 {isStudentRegister ? 'Register Profile' : 'Secure Student Sign In'}
               </button>
 
-              <div style={styles.toggleRow}>
-                <span onClick={() => setIsStudentRegister(!isStudentRegister)} style={styles.linkLight}>
+              <div className="text-center mt-1">
+                <span onClick={() => setIsStudentRegister(!isStudentRegister)} className="text-xs text-blue-600 cursor-pointer underline">
                   {isStudentRegister ? 'Already have an account? Sign In' : 'New student? Register Here'}
                 </span>
               </div>
             </form>
 
-            <div style={styles.switchTerminalBox}>
-              <p style={{ fontSize: '13px', color: '#4b5563', margin: '0 0 8px 0' }}>Need administrative tools?</p>
-              <button type="button" onClick={() => scrollToPanel(1)} style={styles.slideNextBtn}>
+            <div className="mt-6 pt-5 border-t border-gray-200 text-center">
+              <p className="text-xs text-gray-600 mb-2">Need administrative tools?</p>
+              <button type="button" onClick={() => scrollToPanel(1)} className="bg-transparent border-none text-gray-600 hover:text-gray-900 cursor-pointer font-semibold text-sm">
                 Slide to Admin Console ➔
               </button>
             </div>
@@ -212,58 +167,57 @@ const IndexPortal = ({ navigateTo }) => {
         </div>
 
         {/* ================= PANEL 2: ADMIN SYSTEM CONSOLE ================= */}
-        <div style={styles.panelPageDark}>
-          <div style={{ ...styles.card, backgroundColor: '#1f2937', border: '1px solid #374151' }}>
-            <div style={styles.header}>
-              <h2 style={{ color: '#f9fafb', margin: '0 0 5px 0' }}>Admin Console</h2>
-              <p style={{ color: '#9ca3af', fontSize: '12px', margin: 0, textTransform: 'uppercase' }}>Secure Infrastructure Access</p>
+        <div className="min-w-full h-full bg-gray-900 flex justify-center items-center snap-start">
+          <div className="bg-gray-800 border border-gray-700 p-[30px] rounded-xl shadow-md w-[380px]">
+            <div className="text-center mb-6">
+              <h2 className="text-gray-50 font-bold text-2xl mb-1">Admin Console</h2>
+              <p className="text-gray-400 text-xs tracking-wider uppercase">Secure Infrastructure Access</p>
             </div>
 
-            {error && isAdminRegister && <div style={styles.errorAlert}>⚠️ {error}</div>}
+            {error && isAdminRegister && (
+              <div className="bg-red-100 text-red-600 p-2.5 rounded-md mb-4 text-sm text-center">⚠️ {error}</div>
+            )}
 
-            <form onSubmit={(e) => handleAuth(e, 'admin', isAdminRegister)} style={styles.form}>
-              <div style={styles.inputGroup}>
-                <label style={styles.labelDark}>Admin Email</label>
+            <form onSubmit={(e) => handleAuth(e, 'admin', isAdminRegister)} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-300">Admin Email</label>
                 <input 
                   type="email" 
                   placeholder="admin@university.com" 
                   value={adminEmail}
                   onChange={e => setAdminEmail(e.target.value)}
                   required 
-                  style={styles.darkInput}
+                  className="p-2.5 rounded-md border border-gray-600 bg-gray-700 text-white text-sm w-full outline-none focus:border-emerald-500"
                 />
               </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.labelDark}>Password</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-300">Password</label>
                 <input 
                   type="password" 
                   placeholder="••••••••" 
                   value={adminPassword}
                   onChange={e => setAdminPassword(e.target.value)}
                   required 
-                  style={styles.darkInput}
+                  className="p-2.5 rounded-md border border-gray-600 bg-gray-700 text-white text-sm w-full outline-none focus:border-emerald-500"
                 />
               </div>
 
-              {/* Security Validation Field triggered on Admin Sign Up */}
               {isAdminRegister && (
-                <div style={styles.inputGroup}>
-                  <label style={{ ...styles.labelDark, color: '#f87171' }}>Master Admin Email Verification</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-red-400">Master Admin Email Verification</label>
                   <input 
                     type="email" 
                     placeholder="existing.admin@university.com" 
                     value={masterAdminEmail}
                     onChange={e => setMasterAdminEmail(e.target.value)}
                     required 
-                    style={{ ...styles.darkInput, border: '1px solid #ef4444' }}
+                    className="p-2.5 rounded-md border border-red-500 bg-gray-700 text-white text-sm w-full outline-none"
                   />
                 </div>
               )}
 
-              <button type="submit" style={styles.adminBtn}>
+              <button type="submit" className="p-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer transition-colors">
                 {isAdminRegister ? 'Deploy New Admin' : 'Secure Admin Login'}
               </button>
 
-              <div style={styles.toggleRow}>
-                <span onClick={() => setIsAdminRegister(!isAdminRegister)} style={styles.linkDark}>
-                  {isAdminRegister ? 'Cancel Registration' : 'New Admin? Register Profile'}
+              <div className="text-center mt-1">
