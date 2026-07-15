@@ -1,6 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from './useTheme.js';
+import {
+  getStudents,
+  addStudent,
+  updateStudent,
+  deleteStudent,
+  undoDeleteStudent,
+  canUndoDelete,
+  getActivityLog,
+  setSearchKeyword,
+  getSearchKeyword,
+  exportStudentsAsJSON,
+  importStudentsFromJSON,
+  saveDraft,
+  getDraft,
+  clearDraft
+} from './localData.js';
+
+const emptyForm = { name: '', email: '', course: '' };
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -21,6 +39,17 @@ const AdminPanel = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
+  // ===== Student CRUD (Local Storage) state =====
+  const [students, setStudents] = useState([]);
+  const [studentForm, setStudentForm] = useState(emptyForm);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [deleteConfirmIndex, setDeleteConfirmIndex] = useState(null);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentError, setStudentError] = useState('');
+  const [studentMsg, setStudentMsg] = useState('');
+  const [activityLog, setActivityLog] = useState([]);
+  const [undoAvailable, setUndoAvailable] = useState(false);
+
   const loadAdminMetricsData = () => {
     Promise.all([
       fetch('/api/admin/dashboard').then(res => res.json()).catch(() => null),
@@ -38,7 +67,126 @@ const AdminPanel = () => {
 
   useEffect(() => {
     loadAdminMetricsData();
+    refreshStudents();
+    setActivityLog(getActivityLog());
+    setUndoAvailable(canUndoDelete());
+
+    // Restore search term from Session Storage
+    const savedSearch = getSearchKeyword();
+    if (savedSearch) setStudentSearch(savedSearch);
+
+    // Restore any auto-saved draft (Bonus 6)
+    const draft = getDraft();
+    if (draft) setStudentForm(draft);
   }, []);
+
+  const refreshStudents = () => {
+    setStudents(getStudents());
+    setActivityLog(getActivityLog());
+    setUndoAvailable(canUndoDelete());
+  };
+
+  // Auto-save draft on every keystroke (Bonus 6)
+  useEffect(() => {
+    if (studentForm.name || studentForm.email || studentForm.course) {
+      saveDraft(studentForm);
+    }
+  }, [studentForm]);
+
+  const handleStudentFieldChange = (field, value) => {
+    setStudentForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleStudentSearchChange = (value) => {
+    setStudentSearch(value);
+    setSearchKeyword(value); // persist to Session Storage
+  };
+
+  const handleAddOrUpdateStudent = (e) => {
+    e.preventDefault();
+    setStudentError('');
+    setStudentMsg('');
+
+    if (!studentForm.name.trim() || !studentForm.email.trim()) {
+      setStudentError('Name and email are required.');
+      return;
+    }
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(studentForm.email)) {
+      setStudentError('Please enter a valid email address.');
+      return;
+    }
+
+    if (editingIndex !== null) {
+      updateStudent(editingIndex, studentForm);
+      setStudentMsg('✓ Student updated successfully.');
+    } else {
+      addStudent(studentForm);
+      setStudentMsg('✓ Student added successfully.');
+    }
+
+    setStudentForm(emptyForm);
+    setEditingIndex(null);
+    clearDraft();
+    refreshStudents();
+  };
+
+  const handleEditStudent = (index) => {
+    setEditingIndex(index);
+    setStudentForm({ name: students[index].name, email: students[index].email, course: students[index].course || '' });
+    setStudentError('');
+    setStudentMsg('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingIndex(null);
+    setStudentForm(emptyForm);
+    clearDraft();
+  };
+
+  const requestDeleteStudent = (index) => {
+    setDeleteConfirmIndex(index);
+  };
+
+  const confirmDeleteStudent = () => {
+    if (deleteConfirmIndex === null) return;
+    deleteStudent(deleteConfirmIndex);
+    setDeleteConfirmIndex(null);
+    setStudentMsg('🗑️ Student deleted.');
+    refreshStudents();
+  };
+
+  const handleUndoDelete = () => {
+    if (undoDeleteStudent()) {
+      setStudentMsg('↩️ Last deleted student restored.');
+      refreshStudents();
+    }
+  };
+
+  const handleExport = () => exportStudentsAsJSON();
+
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    importStudentsFromJSON(file, (err) => {
+      if (err) {
+        setStudentError('Import failed: invalid JSON file.');
+      } else {
+        setStudentMsg('✓ Students imported successfully.');
+        refreshStudents();
+      }
+    });
+    e.target.value = '';
+  };
+
+  const filteredStudents = students.filter((s) => {
+    const term = studentSearch.toLowerCase();
+    return (
+      s.name?.toLowerCase().includes(term) ||
+      s.email?.toLowerCase().includes(term) ||
+      s.course?.toLowerCase().includes(term)
+    );
+  });
 
   const handleApproveStudent = async (studentId) => {
     setApprovingId(studentId);
@@ -109,7 +257,7 @@ const AdminPanel = () => {
   };
 
   const handleSignOut = () => {
-    localStorage.clear();
+    localStorage.removeItem('loginUser');
     navigate('/');
   };
 
@@ -258,6 +406,94 @@ const AdminPanel = () => {
               </div>
             </form>
           </div>
+
+          {/* ===== Student Records (Local Storage CRUD) ===== */}
+          <div style={styles.panelCard}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h3 style={{ ...styles.paneSectionHeading, margin: 0 }}>👨‍🎓 Student Records (Local Storage)</h3>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={handleExport} style={styles.secondaryAddBtn} className="btn-animated">⬇️ Export</button>
+                <label style={{ ...styles.secondaryAddBtn, cursor: 'pointer', display: 'inline-block' }} className="btn-animated">
+                  ⬆️ Import
+                  <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
+                </label>
+              </div>
+            </div>
+
+            {studentMsg && <div style={styles.successMessageRow}>{studentMsg}</div>}
+            {studentError && <div style={styles.errorMessageRow}>⚠️ {studentError}</div>}
+            {undoAvailable && (
+              <div style={{ ...styles.successMessageRow, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>A student was just deleted.</span>
+                <button onClick={handleUndoDelete} style={styles.approveBtn} className="btn-animated">↩️ Undo</button>
+              </div>
+            )}
+
+            <form onSubmit={handleAddOrUpdateStudent} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '10px', alignItems: 'end', marginBottom: '18px' }}>
+              <div style={styles.inputStackField}>
+                <label style={styles.fieldLabel}>Name</label>
+                <input type="text" value={studentForm.name} onChange={e => handleStudentFieldChange('name', e.target.value)} style={styles.textInputBox} className="input-animated" placeholder="Full name" />
+              </div>
+              <div style={styles.inputStackField}>
+                <label style={styles.fieldLabel}>Email</label>
+                <input type="email" value={studentForm.email} onChange={e => handleStudentFieldChange('email', e.target.value)} style={styles.textInputBox} className="input-animated" placeholder="student@email.com" />
+              </div>
+              <div style={styles.inputStackField}>
+                <label style={styles.fieldLabel}>Course</label>
+                <input type="text" value={studentForm.course} onChange={e => handleStudentFieldChange('course', e.target.value)} style={styles.textInputBox} className="input-animated" placeholder="e.g. B.Tech CSE" />
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button type="submit" style={styles.publishBtn} className="btn-animated">
+                  {editingIndex !== null ? '💾 Save' : '➕ Add'}
+                </button>
+                {editingIndex !== null && (
+                  <button type="button" onClick={handleCancelEdit} style={styles.secondaryAddBtn} className="btn-animated">Cancel</button>
+                )}
+              </div>
+            </form>
+
+            <input
+              type="text"
+              placeholder="🔍 Search students by name, email, or course..."
+              value={studentSearch}
+              onChange={e => handleStudentSearchChange(e.target.value)}
+              style={{ ...styles.textInputBox, width: '100%', marginBottom: '14px', boxSizing: 'border-box' }}
+              className="input-animated"
+            />
+
+            {filteredStudents.length === 0 ? (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                {students.length === 0 ? 'No students added yet.' : 'No students match your search.'}
+              </div>
+            ) : (
+              <table style={styles.studentTable}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Name</th>
+                    <th style={styles.th}>Email</th>
+                    <th style={styles.th}>Course</th>
+                    <th style={styles.th}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.map((s) => {
+                    const realIndex = students.indexOf(s);
+                    return (
+                      <tr key={s.id || realIndex}>
+                        <td style={styles.td}>{s.name}</td>
+                        <td style={styles.td}>{s.email}</td>
+                        <td style={styles.td}>{s.course || '—'}</td>
+                        <td style={styles.td}>
+                          <button onClick={() => handleEditStudent(realIndex)} style={styles.editBtn} className="btn-animated">✏️ Edit</button>
+                          <button onClick={() => requestDeleteStudent(realIndex)} style={styles.deleteBtn} className="btn-animated">🗑️ Delete</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
 
         {/* RIGHT HAND ANALYTICS LOGGER STREAMER COLUMN */}
@@ -270,7 +506,7 @@ const AdminPanel = () => {
             </div>
             <div style={{ ...styles.panelCard, backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0' }} className="card-animated">
               <span style={{ fontSize: '11px', color: '#064e3b', fontWeight: 'bold' }}>REGISTERED STUDENT PROFILES</span>
-              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#065f46', marginTop: '5px' }}>{stats.registeredStudents} Nodes</div>
+              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#065f46', marginTop: '5px' }}>{students.length} Nodes</div>
             </div>
           </div>
 
@@ -302,7 +538,7 @@ const AdminPanel = () => {
           </div>
 
           {/* Submissions Feed */}
-          <div style={styles.panelCard}>
+          <div style={{ ...styles.panelCard, marginBottom: '25px' }}>
             <h3 style={styles.paneSectionHeading}>📊 Real-time Stream Analytics Feed Logs</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {submissions.length === 0 ? (
@@ -320,9 +556,42 @@ const AdminPanel = () => {
               )}
             </div>
           </div>
+
+          {/* Bonus 5: Recent Activity */}
+          <div style={styles.panelCard}>
+            <h3 style={styles.paneSectionHeading}>🕒 Recent Activity</h3>
+            {activityLog.length === 0 ? (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>No activity yet.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto' }}>
+                {activityLog.map((entry, i) => (
+                  <div key={i} style={{ fontSize: '12px', color: '#475569', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+                    <span>{entry.message}</span>
+                    <div style={{ fontSize: '10px', color: '#94a3b8' }}>{entry.time}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirmIndex !== null && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalBox} className="card-animated">
+            <h4 style={{ margin: '0 0 10px 0', color: '#1e293b' }}>Delete this student?</h4>
+            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#64748b' }}>
+              This will remove <strong>{students[deleteConfirmIndex]?.name}</strong> from Local Storage. You can undo this immediately after.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button onClick={() => setDeleteConfirmIndex(null)} style={styles.secondaryAddBtn} className="btn-animated">Cancel</button>
+              <button onClick={confirmDeleteStudent} style={styles.deleteBtn} className="btn-animated">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -349,8 +618,15 @@ const styles = {
   submissionRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px' },
   scoreBadge: { backgroundColor: '#dcfce7', color: '#16a34a', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' },
   approveBtn: { backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' },
+  editBtn: { backgroundColor: '#3b82f6', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', marginRight: '6px' },
+  deleteBtn: { backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' },
   successMessageRow: { padding: '12px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', borderRadius: '6px', fontSize: '13px', marginBottom: '15px' },
-  errorMessageRow: { padding: '12px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', borderRadius: '6px', fontSize: '13px', marginBottom: '15px' }
+  errorMessageRow: { padding: '12px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', borderRadius: '6px', fontSize: '13px', marginBottom: '15px' },
+  studentTable: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
+  th: { textAlign: 'left', padding: '10px', borderBottom: '2px solid #e2e8f0', color: '#475569', fontSize: '11px', textTransform: 'uppercase' },
+  td: { padding: '10px', borderBottom: '1px solid #f1f5f9', color: '#1e293b' },
+  modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
+  modalBox: { backgroundColor: '#fff', padding: '24px', borderRadius: '10px', width: '360px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }
 };
 
 export default AdminPanel;
