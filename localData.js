@@ -23,11 +23,11 @@ export const logout = () => {
 // THEME (Local Storage) - Module 2
 // ============================
 export const saveTheme = (theme) => {
-  localStorage.setItem("theme", theme); // "light" | "dark"
+  localStorage.setItem("appTheme", theme); // "light" | "dark"
 };
 
 export const getTheme = () => {
-  return localStorage.getItem("theme") || "light";
+  return localStorage.getItem("appTheme") || "light";
 };
 
 // ============================
