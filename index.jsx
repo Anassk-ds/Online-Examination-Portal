@@ -7,7 +7,17 @@ const IndexPortal = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
-  // Module 1 (Day-45): If login details are already in Local Storage, auto-navigate
+  // Pulse effect states for a "live terminal" look
+  const [pulse, setPulse] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPulse(p => (p === 0 ? 1 : 0));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Module 1 (Day-45): Auto-navigate if session exists
   useEffect(() => {
     const loggedInUser = getLogin();
     if (loggedInUser && loggedInUser.role) {
@@ -90,27 +100,29 @@ const IndexPortal = () => {
 
   return (
     <div style={styles.viewWindow}>
-      {/* Dynamic Keyframe Animations Injection */}
+      {/* Hidden injection block ensuring structural keyframes render perfectly */}
       <style>{`
-        @keyframes floatAmbient {
-          0% { transform: translateY(0px) translateX(0px) scale(1); opacity: 0.4; }
-          50% { transform: translateY(-40px) translateX(20px) scale(1.1); opacity: 0.7; }
-          100% { transform: translateY(0px) translateX(0px) scale(1); opacity: 0.4; }
+        @keyframes subtleFloating {
+          0% { transform: translateY(0px) scale(1); }
+          50% { transform: translateY(-15px) scale(1.03); }
+          100% { transform: translateY(0px) scale(1); }
         }
-        @keyframes floatAmbientReverse {
-          0% { transform: translateY(0px) translateX(0px) scale(1.1); opacity: 0.3; }
-          50% { transform: translateY(50px) translateX(-30px) scale(0.9); opacity: 0.6; }
-          100% { transform: translateY(0px) translateX(0px) scale(1.1); opacity: 0.3; }
+        .animated-live-card {
+          animation: subtleFloating 6s infinite ease-in-out;
         }
-        .ambient-orb-1 { animation: floatAmbient 12s infinite ease-in-out; }
-        .ambient-orb-2 { animation: floatAmbientReverse 16s infinite ease-in-out; }
-        .theme-toggle-btn:hover { transform: scale(1.1); transition: transform 0.2s; }
+        input:focus {
+          border-color: #2563eb !important;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+        }
+        .dark-focus input:focus {
+          border-color: #60a5fa !important;
+          box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25) !important;
+        }
       `}</style>
 
       <button
         onClick={toggleTheme}
-        className="theme-toggle-btn"
-        style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 10, border: 'none', background: 'rgba(255,255,255,0.2)', padding: '10px', borderRadius: '50%', cursor: 'pointer', fontSize: '18px' }}
+        style={styles.themeToggle}
       >
         {theme === 'light' ? '🌙' : '☀️'}
       </button>
@@ -119,14 +131,22 @@ const IndexPortal = () => {
         
         {/* ================= PANEL 1: STUDENT PORTAL ================= */}
         <div style={styles.panelPageLight}>
-          {/* Live Background Elements */}
-          <div className="ambient-orb-1" style={{ ...styles.ambientOrb, top: '15%', left: '10%', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(16,185,129,0.2) 0%, rgba(255,255,255,0) 70%)' }} />
-          <div className="ambient-orb-2" style={{ ...styles.ambientOrb, bottom: '20%', right: '15%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(37,99,235,0.15) 0%, rgba(255,255,255,0) 70%)' }} />
-
-          <div style={styles.card}>
+          <div 
+            className="animated-live-card" 
+            style={{ 
+              ...styles.card, 
+              boxShadow: pulse === 0 
+                ? '0 20px 25px -5px rgba(16, 185, 129, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' 
+                : '0 25px 30px -5px rgba(16, 185, 129, 0.2), 0 12px 15px -5px rgba(0, 0, 0, 0.06)',
+              transition: 'box-shadow 3s ease-in-out'
+            }}
+          >
             <div style={styles.header}>
               <h2 style={{ color: '#1f2937', margin: '0 0 5px 0' }}>Student Portal</h2>
-              <p style={{ color: '#6b7280', fontSize: '12px', margin: 0, textTransform: 'uppercase' }}>Online Examination Terminal</p>
+              <div style={styles.liveIndicatorContainer}>
+                <span style={styles.liveDotGreen}></span>
+                <p style={{ color: '#6b7280', fontSize: '11px', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Terminal Online</p>
+              </div>
             </div>
 
             {error && !isAdminRegister && <div style={styles.errorAlert}>⚠️ {error}</div>}
@@ -170,7 +190,7 @@ const IndexPortal = () => {
               </div>
 
               <button type="submit" disabled={submitting} style={{ ...styles.studentBtn, opacity: submitting ? 0.7 : 1 }}>
-                {submitting ? 'Please wait...' : (isStudentRegister ? 'Register Profile' : 'Secure Student Sign In')}
+                {submitting ? 'Authenticating...' : (isStudentRegister ? 'Register Profile' : 'Secure Student Sign In')}
               </button>
 
               <div style={styles.toggleRow}>
@@ -191,14 +211,24 @@ const IndexPortal = () => {
 
         {/* ================= PANEL 2: ADMIN SYSTEM CONSOLE ================= */}
         <div style={styles.panelPageDark}>
-          {/* Live Background Elements */}
-          <div className="ambient-orb-1" style={{ ...styles.ambientOrb, top: '10%', right: '10%', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(79,70,229,0.25) 0%, rgba(0,0,0,0) 70%)' }} />
-          <div className="ambient-orb-2" style={{ ...styles.ambientOrb, bottom: '15%', left: '12%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(96,165,250,0.15) 0%, rgba(0,0,0,0) 70%)' }} />
-
-          <div style={{ ...styles.card, backgroundColor: '#1f2937', border: '1px solid #374151', zIndex: 2 }}>
+          <div 
+            className="animated-live-card dark-focus" 
+            style={{ 
+              ...styles.card, 
+              backgroundColor: '#1f2937', 
+              border: '1px solid #374151',
+              boxShadow: pulse === 0 
+                ? '0 20px 25px -5px rgba(79, 70, 229, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.2)' 
+                : '0 25px 35px -5px rgba(79, 70, 229, 0.45), 0 12px 20px -5px rgba(0, 0, 0, 0.3)',
+              transition: 'box-shadow 3s ease-in-out'
+            }}
+          >
             <div style={styles.header}>
               <h2 style={{ color: '#f9fafb', margin: '0 0 5px 0' }}>Admin Console</h2>
-              <p style={{ color: '#9ca3af', fontSize: '12px', margin: 0, textTransform: 'uppercase' }}>Secure Infrastructure Access</p>
+              <div style={styles.liveIndicatorContainer}>
+                <span style={styles.liveDotBlue}></span>
+                <p style={{ color: '#9ca3af', fontSize: '11px', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Infrastructure Nodes Active</p>
+              </div>
             </div>
 
             {error && isAdminRegister && <div style={styles.errorAlert}>⚠️ {error}</div>}
@@ -242,7 +272,7 @@ const IndexPortal = () => {
               </div>
 
               <button type="submit" disabled={submitting} style={{ ...styles.adminBtn, opacity: submitting ? 0.7 : 1 }}>
-                {submitting ? 'Please wait...' : (isAdminRegister ? 'Deploy New Admin' : 'Secure Admin Login')}
+                {submitting ? 'Deploying...' : (isAdminRegister ? 'Deploy New Admin' : 'Secure Admin Login')}
               </button>
 
               <div style={styles.toggleRow}>
@@ -269,27 +299,12 @@ const IndexPortal = () => {
 const styles = {
   viewWindow: { width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', fontFamily: 'sans-serif' },
   scrollWrapper: { display: 'flex', width: '100%', height: '100%', overflowX: 'hidden', scrollSnapType: 'x mandatory' },
-  panelPageLight: { minWidth: '100vw', height: '100vh', backgroundColor: '#f3f4f6', display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'start', position: 'relative' },
-  panelPageDark: { minWidth: '100vw', height: '100vh', backgroundColor: '#111827', display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'start', position: 'relative' },
-  ambientOrb: { position: 'absolute', borderRadius: '50%', pointerEvents: 'none', filter: 'blur(40px)', zIndex: 1 },
-  card: { backgroundColor: '#ffffff', padding: '35px', borderRadius: '16px', boxShadow: '0 20px 40px rgba(0,0,0,0.08)', width: '100%', maxWidth: '360px', zIndex: 2 },
+  panelPageLight: { minWidth: '100vw', height: '100vh', backgroundColor: '#f3f4f6', display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'start' },
+  panelPageDark: { minWidth: '100vw', height: '100vh', backgroundColor: '#111827', display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'start' },
+  themeToggle: { position: 'absolute', top: '20px', right: '20px', zIndex: 10, background: 'rgba(156, 163, 175, 0.15)', border: 'none', padding: '10px 14px', borderRadius: '50%', cursor: 'pointer', fontSize: '16px', transition: 'transform 0.2s' },
+  card: { backgroundColor: '#ffffff', padding: '35px', borderRadius: '20px', width: '100%', maxWidth: '360px', transition: 'all 0.4s ease' },
   header: { textAlign: 'center', marginBottom: '25px' },
-  form: { display: 'flex', flexDirection: 'column', gap: '16px' },
-  inputGroup: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  labelLight: { fontSize: '12px', fontWeight: 'bold', color: '#4b5563' },
-  labelDark: { fontSize: '12px', fontWeight: 'bold', color: '#9ca3af' },
-  lightInput: { padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: '#fff', color: '#1f2937' },
-  darkInput: { padding: '12px', border: '1px solid #4b5563', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: '#374151', color: '#fff' },
-  studentBtn: { backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' },
-  adminBtn: { backgroundColor: '#4f46e5', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' },
-  toggleRow: { textAlign: 'center', marginTop: '5px' },
-  linkLight: { fontSize: '13px', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' },
-  linkDark: { fontSize: '13px', color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline' },
-  switchTerminalBox: { borderTop: '1px solid #e5e7eb', marginTop: '25px', paddingTop: '20px', textAlign: 'center' },
-  slideNextBtn: { background: 'none', border: '1px solid #cbd5e1', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#4b5563', fontSize: '13px', transition: 'background 0.2s' },
-  slidePrevBtn: { background: 'none', border: '1px solid #4b5563', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#9ca3af', fontSize: '13px', transition: 'background 0.2s' },
-  errorAlert: { backgroundColor: '#fef2f2', border: '1px solid #fee2e2', color: '#dc2626', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '15px', textAlign: 'center' },
-  successAlert: { backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '15px', textAlign: 'center' }
-};
-
-export default IndexPortal;
+  liveIndicatorContainer: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' },
+  liveDotGreen: { width: '7px', height: '7px', backgroundColor: '#10b981', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 8px #10b981' },
+  liveDotBlue: { width: '7px', height: '7px', backgroundColor: '#60a5fa', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 8px #60a5fa' },
+  form: { display: 'flex', flexDirection: 'column
