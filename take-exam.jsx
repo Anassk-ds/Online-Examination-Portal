@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { getLogin, saveExamProgress, getExamProgress, clearExamProgress } from './localData.js';
 
 const TakeExam = () => {
   const { id: examId } = useParams();
@@ -12,9 +13,10 @@ const TakeExam = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [restoredNotice, setRestoredNotice] = useState(false);
 
   const [localCode, setLocalCode] = useState('');
-  const studentEmail = localStorage.getItem('userEmail') || 'student@domain.com';
+  const studentEmail = getLogin()?.email || localStorage.getItem('userEmail') || 'student@domain.com';
 
   useEffect(() => {
     if (!examId) {
@@ -32,11 +34,19 @@ const TakeExam = () => {
         if (data) {
           setExam(data);
           setQuestions(data.questions || []);
-          
+
           const endTimestamp = new Date(data.endDate).getTime();
           const currentTimestamp = new Date().getTime();
           const remainingSeconds = Math.max(0, Math.floor((endTimestamp - currentTimestamp) / 1000));
           setTimeLeft(remainingSeconds);
+
+          // Maintaining Data after Page Refresh: restore in-progress answers for this exam/session
+          const saved = getExamProgress(examId);
+          if (saved) {
+            setAnswers(saved.answers || {});
+            setCurrentIdx(saved.currentIdx || 0);
+            setRestoredNotice(true);
+          }
         }
         setLoading(false);
       })
@@ -66,6 +76,13 @@ const TakeExam = () => {
       }
     }
   }, [currentIdx, questions]);
+
+  // Persist progress to Session Storage on every change (cleared automatically on submit or when the tab/session ends)
+  useEffect(() => {
+    if (!loading && examId && questions.length > 0) {
+      saveExamProgress(examId, { answers, currentIdx });
+    }
+  }, [answers, currentIdx, loading, examId, questions.length]);
 
   const handleSelectOption = (optionLetter) => {
     setAnswers({
@@ -117,6 +134,7 @@ const TakeExam = () => {
       return res.json();
     })
     .then(() => {
+      clearExamProgress(examId); // exam is done — no need to keep session draft
       alert('🎉 Assessment submitted successfully!');
       navigate('/dashboard');
     })
@@ -146,6 +164,9 @@ const TakeExam = () => {
         <div>
           <h2 style={{ margin: 0, fontSize: '18px', color: '#f8fafc' }}>{exam?.title}</h2>
           <span style={{ fontSize: '12px', color: '#94a3b8' }}>Session Candidate Profile: {studentEmail}</span>
+          {restoredNotice && (
+            <span style={{ marginLeft: '12px', fontSize: '11px', color: '#34d399' }}>✓ Restored your progress from this session</span>
+          )}
         </div>
         <div style={styles.timerBadgeContainer}>
           <span style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 'bold' }}>Remaining Duration Clock:</span>
