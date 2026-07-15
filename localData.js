@@ -1,190 +1,282 @@
-// ============================
-// LOGIN (Local Storage)
-// ============================
-export const saveLogin = (user) => {
-  localStorage.setItem("loginUser", JSON.stringify(user));
-  logActivity(`Logged in as ${user?.username || user?.name || "user"}`);
-};
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTheme } from './useTheme.js';
+import { saveLogin, getLogin, registerUser, loginUser } from './localData.js';
 
-export const getLogin = () => {
-  return JSON.parse(localStorage.getItem("loginUser"));
-};
+const IndexPortal = () => {
+  const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
-export const isLoggedIn = () => {
-  return !!getLogin();
-};
+  // Module 1 (Day-45): if login details are already in Local Storage from a
+  // previous session, skip the login form entirely and go straight to the
+  // right dashboard instead of asking the user to sign in again.
+  useEffect(() => {
+    const loggedInUser = getLogin();
+    if (loggedInUser && loggedInUser.role) {
+      navigate(loggedInUser.role === 'admin' ? '/admin' : '/dashboard');
+    }
+  }, [navigate]);
 
-export const logout = () => {
-  logActivity("Logged out");
-  localStorage.removeItem("loginUser");
-};
+  // Student States
+  const [studentName, setStudentName] = useState('');
+  const [studentEmail, setStudentEmail] = useState('');
+  const [studentPassword, setStudentPassword] = useState('');
+  const [isStudentRegister, setIsStudentRegister] = useState(false);
 
-// ============================
-// THEME (Local Storage) - Module 2
-// ============================
-export const saveTheme = (theme) => {
-  localStorage.setItem("appTheme", theme); // "light" | "dark"
-};
+  // Admin States
+  const [adminName, setAdminName] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isAdminRegister, setIsAdminRegister] = useState(false);
 
-export const getTheme = () => {
-  return localStorage.getItem("appTheme") || "light";
-};
+  // UI Status Alerts
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const scrollContainerRef = useRef(null);
 
-// ============================
-// STUDENTS CRUD (Local Storage) - Module 3, 5, 6, 7
-// ============================
-export const getStudents = () => {
-  return JSON.parse(localStorage.getItem("students")) || [];
-};
-
-export const saveStudents = (students) => {
-  localStorage.setItem("students", JSON.stringify(students));
-};
-
-// Generates a unique id for each new student
-const generateId = () => {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-};
-
-export const addStudent = (student) => {
-  const students = getStudents();
-  const newStudent = { id: generateId(), ...student };
-  students.push(newStudent);
-  saveStudents(students);
-  logActivity(`Added student "${student.name || newStudent.id}"`);
-  return newStudent;
-};
-
-// Kept index-based to match existing calls in your components
-export const updateStudent = (index, student) => {
-  const students = getStudents();
-  if (index < 0 || index >= students.length) return;
-  const existingId = students[index].id;
-  students[index] = { id: existingId, ...student };
-  saveStudents(students);
-  logActivity(`Updated student "${student.name || existingId}"`);
-};
-
-// Kept index-based to match existing calls in your components
-export const deleteStudent = (index) => {
-  const students = getStudents();
-  if (index < 0 || index >= students.length) return;
-  const [removed] = students.splice(index, 1);
-  saveStudents(students);
-  // Store for Undo Delete (Bonus 2)
-  sessionStorage.setItem("lastDeletedStudent", JSON.stringify({ index, student: removed }));
-  logActivity(`Deleted student "${removed?.name || removed?.id}"`);
-};
-
-// Bonus 2: Undo Delete
-export const undoDeleteStudent = () => {
-  const last = JSON.parse(sessionStorage.getItem("lastDeletedStudent"));
-  if (!last) return false;
-  const students = getStudents();
-  const insertAt = Math.min(last.index, students.length);
-  students.splice(insertAt, 0, last.student);
-  saveStudents(students);
-  sessionStorage.removeItem("lastDeletedStudent");
-  logActivity(`Restored student "${last.student?.name || last.student?.id}"`);
-  return true;
-};
-
-export const canUndoDelete = () => {
-  return !!sessionStorage.getItem("lastDeletedStudent");
-};
-
-// Bonus 3: Import & Export
-export const exportStudentsAsJSON = () => {
-  const dataStr = JSON.stringify(getStudents(), null, 2);
-  const blob = new Blob([dataStr], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "students.json";
-  link.click();
-  URL.revokeObjectURL(url);
-};
-
-export const importStudentsFromJSON = (file, callback) => {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const imported = JSON.parse(e.target.result);
-      if (!Array.isArray(imported)) throw new Error("Invalid format");
-      const existing = getStudents();
-      const withIds = imported.map((s) => ({ id: s.id || generateId(), ...s }));
-      saveStudents([...existing, ...withIds]);
-      logActivity(`Imported ${withIds.length} student(s)`);
-      callback?.(null, withIds);
-    } catch (err) {
-      callback?.(err, null);
+  // Smooth Scroll Controller
+  const scrollToPanel = (panelIndex) => {
+    setError('');
+    setSuccess('');
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        left: panelIndex * scrollContainerRef.current.clientWidth,
+        behavior: 'smooth'
+      });
     }
   };
-  reader.readAsText(file);
+
+  // Auth Handler — fully Local Storage based, no backend required.
+  // Register writes a new account into Local Storage; Login checks
+  // credentials against it and persists the session via saveLogin()
+  // (Module 1) so refreshes keep the user signed in.
+  const handleAuth = (e, type, isRegister) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    const name = type === 'admin' ? adminName : studentName;
+    const email = type === 'admin' ? adminEmail : studentEmail;
+    const password = type === 'admin' ? adminPassword : studentPassword;
+
+    if (isRegister && !name.trim()) {
+      return setError('Please enter your full name.');
+    }
+    if (!email.trim() || !password.trim()) {
+      return setError('Please fill in all secure authentication inputs.');
+    }
+
+    setSubmitting(true);
+
+    if (isRegister) {
+      const result = registerUser({ name, email, password, role: type });
+      if (!result.success) {
+        setError(result.message);
+      } else {
+        setSuccess('✅ Registered! You can now sign in.');
+        if (type === 'admin') setIsAdminRegister(false);
+        else setIsStudentRegister(false);
+      }
+    } else {
+      const result = loginUser(email, password);
+      if (!result.success) {
+        setError(result.message);
+      } else {
+        const user = result.user;
+
+        // Canonical login persistence (Module 1) — used by admin.jsx,
+        // student-dashboard.jsx, and take-exam.jsx.
+        saveLogin({ email: user.email, name: user.name, role: user.role });
+
+        // Legacy keys kept in sync for any other component reading them directly.
+        localStorage.setItem('userEmail', user.email);
+        localStorage.setItem('userName', user.name);
+        localStorage.setItem('userRole', user.role);
+
+        navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+      }
+    }
+
+    setSubmitting(false);
+  };
+
+  return (
+    <div style={styles.viewWindow}>
+      <button
+        onClick={toggleTheme}
+        className="theme-toggle-btn"
+        style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 10 }}
+      >
+        {theme === 'light' ? '🌙' : '☀️'}
+      </button>
+      <div style={styles.scrollWrapper} ref={scrollContainerRef}>
+        
+        {/* ================= PANEL 1: STUDENT PORTAL ================= */}
+        <div style={styles.panelPageLight}>
+          <div style={styles.card}>
+            <div style={styles.header}>
+              <h2 style={{ color: '#1f2937', margin: '0 0 5px 0' }}>Student Portal</h2>
+              <p style={{ color: '#6b7280', fontSize: '12px', margin: 0, textTransform: 'uppercase' }}>Online Examination Terminal</p>
+            </div>
+
+            {error && !isAdminRegister && <div style={styles.errorAlert}>⚠️ {error}</div>}
+            {success && !isAdminRegister && <div style={styles.successAlert}>{success}</div>}
+
+            <form onSubmit={(e) => handleAuth(e, 'student', isStudentRegister)} style={styles.form}>
+              {isStudentRegister && (
+                <div style={styles.inputGroup}>
+                  <label style={styles.labelLight}>Full Name</label>
+                  <input 
+                    type="text" 
+                    placeholder="Jane Doe" 
+                    value={studentName}
+                    onChange={e => setStudentName(e.target.value)}
+                    required 
+                    style={styles.lightInput}
+                  />
+                </div>
+              )}
+              <div style={styles.inputGroup}>
+                <label style={styles.labelLight}>Student Email</label>
+                <input 
+                  type="email" 
+                  placeholder="student@university.com" 
+                  value={studentEmail}
+                  onChange={e => setStudentEmail(e.target.value)}
+                  required 
+                  style={styles.lightInput}
+                />
+              </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.labelLight}>Password</label>
+                <input 
+                  type="password" 
+                  placeholder="••••••••" 
+                  value={studentPassword}
+                  onChange={e => setStudentPassword(e.target.value)}
+                  required 
+                  style={styles.lightInput}
+                />
+              </div>
+
+              <button type="submit" disabled={submitting} style={{ ...styles.studentBtn, opacity: submitting ? 0.7 : 1 }}>
+                {submitting ? 'Please wait...' : (isStudentRegister ? 'Register Profile' : 'Secure Student Sign In')}
+              </button>
+
+              <div style={styles.toggleRow}>
+                <span onClick={() => { setIsStudentRegister(!isStudentRegister); setError(''); setSuccess(''); }} style={styles.linkLight}>
+                  {isStudentRegister ? 'Already have an account? Sign In' : 'New student? Register Here'}
+                </span>
+              </div>
+            </form>
+
+            <div style={styles.switchTerminalBox}>
+              <p style={{ fontSize: '13px', color: '#4b5563', margin: '0 0 8px 0' }}>Need administrative tools?</p>
+              <button type="button" onClick={() => scrollToPanel(1)} style={styles.slideNextBtn}>
+                Slide to Admin Console ➔
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ================= PANEL 2: ADMIN SYSTEM CONSOLE ================= */}
+        <div style={styles.panelPageDark}>
+          <div style={{ ...styles.card, backgroundColor: '#1f2937', border: '1px solid #374151' }}>
+            <div style={styles.header}>
+              <h2 style={{ color: '#f9fafb', margin: '0 0 5px 0' }}>Admin Console</h2>
+              <p style={{ color: '#9ca3af', fontSize: '12px', margin: 0, textTransform: 'uppercase' }}>Secure Infrastructure Access</p>
+            </div>
+
+            {error && isAdminRegister && <div style={styles.errorAlert}>⚠️ {error}</div>}
+            {success && isAdminRegister && <div style={styles.successAlert}>{success}</div>}
+
+            <form onSubmit={(e) => handleAuth(e, 'admin', isAdminRegister)} style={styles.form}>
+              {isAdminRegister && (
+                <div style={styles.inputGroup}>
+                  <label style={styles.labelDark}>Full Name</label>
+                  <input 
+                    type="text" 
+                    placeholder="Admin Name" 
+                    value={adminName}
+                    onChange={e => setAdminName(e.target.value)}
+                    required 
+                    style={styles.darkInput}
+                  />
+                </div>
+              )}
+              <div style={styles.inputGroup}>
+                <label style={styles.labelDark}>Admin Email</label>
+                <input 
+                  type="email" 
+                  placeholder="admin@university.com" 
+                  value={adminEmail}
+                  onChange={e => setAdminEmail(e.target.value)}
+                  required 
+                  style={styles.darkInput}
+                />
+              </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.labelDark}>Password</label>
+                <input 
+                  type="password" 
+                  placeholder="••••••••" 
+                  value={adminPassword}
+                  onChange={e => setAdminPassword(e.target.value)}
+                  required 
+                  style={styles.darkInput}
+                />
+              </div>
+
+              <button type="submit" disabled={submitting} style={{ ...styles.adminBtn, opacity: submitting ? 0.7 : 1 }}>
+                {submitting ? 'Please wait...' : (isAdminRegister ? 'Deploy New Admin' : 'Secure Admin Login')}
+              </button>
+
+              <div style={styles.toggleRow}>
+                <span onClick={() => { setIsAdminRegister(!isAdminRegister); setError(''); setSuccess(''); }} style={styles.linkDark}>
+                  {isAdminRegister ? 'Cancel Registration' : 'New Admin? Register Profile'}
+                </span>
+              </div>
+            </form>
+
+            <div style={{ ...styles.switchTerminalBox, borderTop: '1px solid #374151' }}>
+              <p style={{ fontSize: '13px', color: '#9ca3af', margin: '0 0 8px 0' }}>Are you a test taker?</p>
+              <button type="button" onClick={() => scrollToPanel(0)} style={styles.slidePrevBtn}>
+                ◀ Return to Student Portal
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
 };
 
-// ============================
-// SESSION STORAGE (Module 4) - temporary, per-session data
-// ============================
-export const setLastVisitedPage = (path) => {
-  sessionStorage.setItem("lastVisitedPage", path);
+// Styles configuration optimized for continuous horizontal slide behaviors
+const styles = {
+  viewWindow: { width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', fontFamily: 'sans-serif' },
+  scrollWrapper: { display: 'flex', width: '100%', height: '100%', overflowX: 'hidden', scrollSnapType: 'x mandatory' },
+  panelPageLight: { minWidth: '100vw', height: '100vh', backgroundColor: '#f3f4f6', display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'start' },
+  panelPageDark: { minWidth: '100vw', height: '100vh', backgroundColor: '#111827', display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'start' },
+  card: { backgroundColor: '#ffffff', padding: '35px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', width: '100%', maxWidth: '360px' },
+  header: { textAlign: 'center', marginBottom: '25px' },
+  form: { display: 'flex', flexDirection: 'column', gap: '16px' },
+  inputGroup: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  labelLight: { fontSize: '12px', fontWeight: 'bold', color: '#4b5563' },
+  labelDark: { fontSize: '12px', fontWeight: 'bold', color: '#9ca3af' },
+  lightInput: { padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: '#fff', color: '#1f2937' },
+  darkInput: { padding: '12px', border: '1px solid #4b5563', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: '#374151', color: '#fff' },
+  studentBtn: { backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
+  adminBtn: { backgroundColor: '#4f46e5', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
+  toggleRow: { textAlign: 'center', marginTop: '5px' },
+  linkLight: { fontSize: '13px', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' },
+  linkDark: { fontSize: '13px', color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline' },
+  switchTerminalBox: { borderTop: '1px solid #e5e7eb', marginTop: '25px', paddingTop: '20px', textAlign: 'center' },
+  slideNextBtn: { background: 'none', border: '1px solid #cbd5e1', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#4b5563', fontSize: '13px' },
+  slidePrevBtn: { background: 'none', border: '1px solid #4b5563', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#9ca3af', fontSize: '13px' },
+  errorAlert: { backgroundColor: '#fef2f2', border: '1px solid #fee2e2', color: '#dc2626', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '15px', textAlign: 'center' },
+  successAlert: { backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '15px', textAlign: 'center' }
 };
 
-export const getLastVisitedPage = () => {
-  return sessionStorage.getItem("lastVisitedPage");
-};
-
-export const setSearchKeyword = (keyword) => {
-  sessionStorage.setItem("searchKeyword", keyword);
-};
-
-export const getSearchKeyword = () => {
-  return sessionStorage.getItem("searchKeyword") || "";
-};
-
-export const setActiveFilter = (filter) => {
-  sessionStorage.setItem("activeFilter", filter);
-};
-
-export const getActiveFilter = () => {
-  return sessionStorage.getItem("activeFilter") || "all";
-};
-
-// ============================
-// Bonus 5: Recent Activity log (Local Storage)
-// ============================
-export const logActivity = (message) => {
-  const log = JSON.parse(localStorage.getItem("activityLog")) || [];
-  log.unshift({ message, time: new Date().toLocaleString() });
-  localStorage.setItem("activityLog", JSON.stringify(log.slice(0, 20))); // keep last 20
-};
-
-export const getActivityLog = () => {
-  return JSON.parse(localStorage.getItem("activityLog")) || [];
-};
-
-// Exam-in-progress persistence (Session Storage) — survives refresh, cleared on submit
-export const saveExamProgress = (examId, progress) => {
-  sessionStorage.setItem(`examProgress:${examId}`, JSON.stringify(progress));
-};
-
-export const getExamProgress = (examId) => {
-  return JSON.parse(sessionStorage.getItem(`examProgress:${examId}`)) || null;
-};
-
-export const clearExamProgress = (examId) => {
-  sessionStorage.removeItem(`examProgress:${examId}`);
-};
-
-// Bonus 6: Auto Save Draft
-export const saveDraft = (formData) => {
-  sessionStorage.setItem("studentFormDraft", JSON.stringify(formData));
-};
-
-export const getDraft = () => {
-  return JSON.parse(sessionStorage.getItem("studentFormDraft")) || null;
-};
-
-export const clearDraft = () => {
-  sessionStorage.removeItem("studentFormDraft");
-};
+export default IndexPortal;
