@@ -1,34 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from './useTheme.js';
+import { getExams, getResults } from './localData.js';
 import StudyNotes from './StudyNotes.jsx';
-import { getLogin, logout, setLastVisitedPage, getLastVisitedPage } from './localData.js';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTabState] = useState(() => getLastVisitedPage() || 'Home');
-  const [examsList, setExamsList] = useState([]); 
+  const [activeTab, setActiveTab] = useState('Home');
+  const [examsList, setExamsList] = useState([]);
   const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [expandedResultId, setExpandedResultId] = useState(null);
 
-  const loggedInUser = getLogin();
-  const studentEmail = loggedInUser?.email || localStorage.getItem('userEmail') || '';
-
-  // Module 1: Login persistence guard — redirect if not authenticated
-  useEffect(() => {
-    if (!loggedInUser) {
-      navigate('/');
-    }
-  }, []);
-
-  // Module 4: Session Storage — remember the active tab for this session only
-  const setActiveTab = (tab) => {
-    setActiveTabState(tab);
-    setLastVisitedPage(tab);
-  };
+  const studentEmail = localStorage.getItem('userEmail') || '';
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -36,19 +21,8 @@ const StudentDashboard = () => {
   }, []);
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/student/exams').then(res => res.json()).catch(() => []), 
-      fetch(`/api/student/results?email=${studentEmail}`).then(res => res.json()).catch(() => [])
-    ])
-    .then(([examsData, resultsData]) => {
-      setExamsList(Array.isArray(examsData) ? examsData : []);
-      setResults(Array.isArray(resultsData) ? resultsData : []);
-      setLoading(false);
-    })
-    .catch((err) => {
-      console.error("Failed to sync structural dashboard data:", err);
-      setLoading(false);
-    });
+    setExamsList(getExams());
+    setResults(getResults().filter((r) => r.studentEmail === studentEmail));
   }, [studentEmail]);
 
   const toggleResultExpansion = (id) => {
@@ -56,85 +30,70 @@ const StudentDashboard = () => {
   };
 
   const handleLogout = () => {
-    logout();
+    localStorage.clear();
     navigate('/');
   };
 
-  const handleLaunchExamProcedure = (examId) => {
-    if (!examId) {
-      alert("⚠️ Error: Exam mapping signature is corrupted or blank.");
+  const handleLaunchExam = (examId) => {
+    const alreadyTaken = getResults().some((r) => r.studentEmail === studentEmail && r.examId === examId);
+    if (alreadyTaken) {
+      alert('You have already submitted this exam.');
       return;
     }
-
-    fetch(`/api/student/check-attempt?email=${studentEmail}&examId=${examId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.allowed === false) {
-          alert(data.error || "🔒 Access Blocked: You have already submitted this exam sheet.");
-        } else {
-          navigate(`/take-exam/${examId}`);
-        }
-      })
-      .catch(() => {
-        navigate(`/take-exam/${examId}`);
-      });
+    navigate(`/take-exam/${examId}`);
   };
 
   const handleViewExamDetails = (examId) => {
     navigate(`/exams/${examId}`);
   };
 
-  if (loading) return <div style={{ padding: '40px', fontFamily: 'sans-serif', textAlign: 'center', color: '#475569' }}>🔄 Fetching Profile Metrics Panels...</div>;
-
   return (
-    <div style={styles.dashboardContainer} className="page-fade-in">
-      {/* Sidebar command ribbon */}
-      <div style={styles.sidebarPanel} className="sidebar-fade-in">
-        <div style={{ padding: '25px 20px' }}>
-          <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '18px', fontWeight: 'bold' }}>🎓 Student Hub</h3>
-          <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{studentEmail}</p>
+    <div className="dash-container page-fade-in">
+      <div className="dash-sidebar sidebar-fade-in">
+        <div className="dash-sidebar-header">
+          <h3>🎓 Student Hub</h3>
+          <p>{studentEmail}</p>
         </div>
-        <div style={styles.navigationMenuOptions}>
-          <button onClick={() => setActiveTab('Home')} style={{ ...styles.menuBtn, backgroundColor: activeTab === 'Home' ? '#1e293b' : 'transparent', color: activeTab === 'Home' ? '#3b82f6' : '#94a3b8' }} className="sidebar-item-animated">🏠 Central Hub</button>
-          <button onClick={() => setActiveTab('Exams')} style={{ ...styles.menuBtn, backgroundColor: activeTab === 'Exams' ? '#1e293b' : 'transparent', color: activeTab === 'Exams' ? '#3b82f6' : '#94a3b8' }} className="sidebar-item-animated">✍️ Available Slots</button>
-          <button onClick={() => setActiveTab('Results')} style={{ ...styles.menuBtn, backgroundColor: activeTab === 'Results' ? '#1e293b' : 'transparent', color: activeTab === 'Results' ? '#3b82f6' : '#94a3b8' }} className="sidebar-item-animated">📊 Performance Review</button>
-          <button onClick={() => setActiveTab('Notes')} style={{ ...styles.menuBtn, backgroundColor: activeTab === 'Notes' ? '#1e293b' : 'transparent', color: activeTab === 'Notes' ? '#3b82f6' : '#94a3b8' }} className="sidebar-item-animated">📝 Study Notes</button>
+        <div className="dash-nav">
+          <button onClick={() => setActiveTab('Home')} className={`dash-nav-btn sidebar-item-animated ${activeTab === 'Home' ? 'active' : ''}`}>🏠 Home</button>
+          <button onClick={() => setActiveTab('Exams')} className={`dash-nav-btn sidebar-item-animated ${activeTab === 'Exams' ? 'active' : ''}`}>✍️ Available Exams</button>
+          <button onClick={() => setActiveTab('Results')} className={`dash-nav-btn sidebar-item-animated ${activeTab === 'Results' ? 'active' : ''}`}>📊 My Results</button>
+          <button onClick={() => setActiveTab('Notes')} className={`dash-nav-btn sidebar-item-animated ${activeTab === 'Notes' ? 'active' : ''}`}>📝 Study Notes</button>
         </div>
-        <div style={{ padding: '0 20px 15px' }}>
+        <div className="dash-theme-row">
           <button onClick={toggleTheme} className="theme-toggle-btn btn-animated" style={{ width: '100%' }}>
             {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
           </button>
         </div>
-        <button onClick={handleLogout} style={styles.logoutBtnRow} className="btn-animated">🚪 Log Out Profile</button>
+        <button onClick={handleLogout} className="dash-logout-btn btn-animated">🚪 Log Out</button>
       </div>
 
-      {/* Main Container Viewport Panel */}
-      <div style={styles.mainViewportWorkspace}>
+      <div className="dash-main">
         {activeTab === 'Home' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={styles.welcomeBannerCard}>
-              <h1 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 'bold' }}>Welcome Back, Student!</h1>
-              <p style={{ margin: 0, opacity: 0.85, fontSize: '14px' }}>System Time: {currentTime.toLocaleTimeString()} | Review your pending challenges or track graded logs via the control console.</p>
+            <div className="dash-banner">
+              <h1>Welcome Back!</h1>
+              <p>Current time: {currentTime.toLocaleTimeString()}</p>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div style={styles.miniMetricWidgetBox} className="card-animated">
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>AVAILABLE ASSIGNMENT WINDOWS</span>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', marginTop: '5px' }}>{examsList.length} Active Slots</div>
+            <div className="dash-metrics-grid">
+              <div className="dash-metric-card card-animated">
+                <span className="dash-metric-label">AVAILABLE EXAMS</span>
+                <div className="dash-metric-value">{examsList.length}</div>
               </div>
-              <div style={styles.miniMetricWidgetBox} className="card-animated">
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>COMPLETED EVALUATION PACKETS</span>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', marginTop: '5px' }}>{results.length} Submitted</div>
+              <div className="dash-metric-card card-animated">
+                <span className="dash-metric-label">COMPLETED EXAMS</span>
+                <div className="dash-metric-value">{results.length}</div>
               </div>
             </div>
           </div>
         )}
 
         {activeTab === 'Exams' && (
-          <div style={styles.sectionAreaCard} className="card-animated">
-            <h3 style={styles.sectionCardTitle}>✍️ Live Scheduled Test Slots</h3>
-            <div style={styles.list}>
+          <div className="dash-section-card card-animated">
+            <h3 className="dash-section-title">✍️ Available Exams</h3>
+            <div className="dash-list">
               {examsList.length === 0 ? (
-                <div style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>No assessment blocks have been declared by system supervisors.</div>
+                <div className="dash-empty-state">No exams have been published yet.</div>
               ) : (
                 examsList.map((exam) => {
                   const start = new Date(exam.startDate);
@@ -144,25 +103,19 @@ const StudentDashboard = () => {
                   const isOpen = !isUpcoming && !isExpired;
 
                   return (
-                    <div key={exam._id} style={styles.itemCard} className="card-animated">
+                    <div key={exam._id} className="dash-item-card card-animated">
                       <div>
-                        <h4 style={{ margin: '0 0 6px 0', color: '#0f172a', fontSize: '16px' }}>{exam.title}</h4>
-                        <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', gap: '15px' }}>
+                        <h4 className="dash-item-title">{exam.title}</h4>
+                        <div className="dash-item-meta">
                           <span>⏱️ Starts: {start.toLocaleString()}</span>
                           <span>🛑 Ends: {end.toLocaleString()}</span>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button onClick={() => handleViewExamDetails(exam._id)} style={{ ...styles.startBtn, backgroundColor: '#64748b' }} className="btn-animated">
-                          📋 View Rules
-                        </button>
-                        {isOpen && (
-                          <button onClick={() => handleLaunchExamProcedure(exam._id)} style={styles.startBtn} className="btn-animated">
-                            Start Assessment ➔
-                          </button>
-                        )}
-                        {isUpcoming && <span style={{ padding: '10px 14px', backgroundColor: '#fef3c7', color: '#d97706', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold' }}>🔒 Locked</span>}
-                        {isExpired && <span style={{ padding: '10px 14px', backgroundColor: '#fee2e2', color: '#dc2626', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold' }}>🛑 Expired</span>}
+                      <div className="dash-item-actions">
+                        <button onClick={() => handleViewExamDetails(exam._id)} className="dash-btn-view btn-animated">📋 View</button>
+                        {isOpen && <button onClick={() => handleLaunchExam(exam._id)} className="dash-btn-start btn-animated">Start Exam ➔</button>}
+                        {isUpcoming && <span className="dash-badge-locked">🔒 Locked</span>}
+                        {isExpired && <span className="dash-badge-expired">🛑 Expired</span>}
                       </div>
                     </div>
                   );
@@ -173,50 +126,44 @@ const StudentDashboard = () => {
         )}
 
         {activeTab === 'Results' && (
-          <div style={styles.sectionAreaCard} className="card-animated">
-            <h3 style={styles.sectionCardTitle}>📊 Performance Evaluation Matrix Logs</h3>
-            <div style={styles.list}>
+          <div className="dash-section-card card-animated">
+            <h3 className="dash-section-title">📊 My Results</h3>
+            <div className="dash-list">
               {results.length === 0 ? (
-                <div style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>No archived scoring matrices cataloged for this identity layer.</div>
+                <div className="dash-empty-state">You haven't submitted any exams yet.</div>
               ) : (
                 results.map((res) => {
-                  const totalQ = res.examId?.questions?.length || 0;
-                  const isExpanded = expandedResultId === res._id;
-
+                  const isExpanded = expandedResultId === res.id;
                   return (
-                    <div key={res._id} style={{ ...styles.itemCard, flexDirection: 'column', alignItems: 'stretch', gap: '15px' }} className="card-animated">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={res.id} className="dash-result-card card-animated">
+                      <div className="dash-result-header">
                         <div>
-                          <h4 style={{ margin: '0 0 4px 0', color: '#0f172a', fontSize: '15px' }}>{res.examTitle || 'Exam Submission'}</h4>
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>ID Reference ID: {res.examId?._id || res.examId}</span>
+                          <h4 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>{res.examTitle || 'Exam Submission'}</h4>
+                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>{new Date(res.createdAt).toLocaleString()}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                          <span style={{ fontWeight: 'bold', fontSize: '16px', color: '#10b981' }}>
-                            Score metrics synced ({totalQ} items analyzed)
-                          </span>
-                          <button onClick={() => toggleResultExpansion(res._id)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }} className="btn-animated">
-                            {isExpanded ? 'Collapse Details ▲' : 'Expand Submissions ▼'}
+                          <span style={{ fontWeight: 'bold', fontSize: '16px', color: '#10b981' }}>{res.score}/{res.totalQuestions}</span>
+                          <button onClick={() => toggleResultExpansion(res.id)} className="dash-result-expand-btn btn-animated">
+                            {isExpanded ? 'Hide ▲' : 'View Details ▼'}
                           </button>
                         </div>
                       </div>
 
                       {isExpanded && (
-                        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '15px', display: 'flex', flexDirection: 'column', gap: '12px', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '8px' }}>
-                          <h5 style={{ margin: '0 0 5px 0', color: '#334155' }}>Student Answers Array Logs:</h5>
+                        <div className="dash-result-details">
+                          <h5 style={{ margin: '0 0 5px 0', color: '#334155' }}>Your Answers:</h5>
                           {res.studentAnswers && Object.keys(res.studentAnswers).map((key) => {
                             const ans = res.studentAnswers[key];
                             return (
                               <div key={key} style={{ fontSize: '13px', borderBottom: '1px dashed #e2e8f0', paddingBottom: '8px' }}>
-                                <strong>Item #{parseInt(key) + 1}: </strong>
+                                <strong>Question {parseInt(key) + 1}: </strong>
                                 {typeof ans === 'object' ? (
                                   <div style={{ marginTop: '4px' }}>
-                                    <span style={{ backgroundColor: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', marginRight: '5px' }}>
-                                      {ans.lang?.toUpperCase()}
-                                    </span>
-                                    <pre style={{ margin: '5px 0 0 0', backgroundColor: '#1e293b', color: '#f8fafc', padding: '8px', borderRadius: '4px', overflowX: 'auto', fontFamily: 'monospace' }}>{ans.code}</pre>
+                                    <span className="dash-answer-lang-tag">{ans.lang?.toUpperCase()}</span>
+                                    <pre className="dash-answer-code">{ans.code}</pre>
                                   </div>
                                 ) : (
-                                  <span style={{ color: '#475569', fontWeight: '600' }}>Selected Option Choice Option: [ {ans} ]</span>
+                                  <span style={{ color: '#475569', fontWeight: '600' }}>Selected: {ans}</span>
                                 )}
                               </div>
                             );
@@ -235,22 +182,6 @@ const StudentDashboard = () => {
       </div>
     </div>
   );
-};
-
-const styles = {
-  dashboardContainer: { display: 'flex', width: '100vw', height: '100vh', backgroundColor: 'var(--background)', color: 'var(--text)', fontFamily: 'sans-serif' },
-  sidebarPanel: { width: '260px', backgroundColor: '#0f172a', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' },
-  navigationMenuOptions: { flex: 1, display: 'flex', flexDirection: 'column', gap: '5px', padding: '0 10px' },
-  menuBtn: { border: 'none', padding: '13px 15px', borderRadius: '8px', textAlign: 'left', fontSize: '13px', fontWeight: '600', outline: 'none' },
-  logoutBtnRow: { margin: '20px', padding: '12px', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', outline: 'none', textAlign: 'center' },
-  mainViewportWorkspace: { flex: 1, padding: '40px', overflowY: 'auto' },
-  welcomeBannerCard: { backgroundColor: '#3b82f6', color: '#fff', padding: '30px', borderRadius: '16px', boxShadow: '0 4px 20px rgba(59,130,246,0.15)' },
-  miniMetricWidgetBox: { backgroundColor: 'var(--surface)', color: 'var(--text)', padding: '25px', borderRadius: '16px', border: '1px solid var(--border)' },
-  sectionAreaCard: { backgroundColor: 'var(--surface)', color: 'var(--text)', padding: '30px', borderRadius: '16px', border: '1px solid var(--border)' },
-  sectionCardTitle: { fontSize: '18px', margin: '0 0 20px 0', color: 'var(--text)', fontWeight: '700' },
-  list: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  itemCard: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', backgroundColor: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '12px' },
-  startBtn: { backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', outline: 'none' }
 };
 
 export default StudentDashboard;
