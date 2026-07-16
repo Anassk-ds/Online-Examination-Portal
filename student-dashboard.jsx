@@ -30,9 +30,11 @@ const StudentDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.clear();
-    navigate('/');
-  };
+  localStorage.removeItem('userEmail');
+  localStorage.removeItem('userName');
+  localStorage.removeItem('userRole');
+  navigate('/');
+};
 
   const handleLaunchExam = (examId) => {
     const alreadyTaken = getResults().some((r) => r.studentEmail === studentEmail && r.examId === examId);
