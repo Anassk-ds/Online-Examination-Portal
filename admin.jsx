@@ -142,11 +142,11 @@ const AdminPanel = () => {
   };
 
   const handleLogout = () => {
-  localStorage.removeItem('userEmail');
-  localStorage.removeItem('userName');
-  localStorage.removeItem('userRole');
-  navigate('/');
-};
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userRole');
+    navigate('/');
+  };
 
   if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#475569' }}>Loading admin dashboard...</div>;
 
@@ -161,7 +161,7 @@ const AdminPanel = () => {
           <button onClick={toggleTheme} className="theme-toggle-btn btn-animated">
             {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
           </button>
-          <button onClick={handleSignOut} className="logout-btn btn-animated">Log Out</button>
+          <button onClick={handleLogout} className="logout-btn btn-animated">Log Out</button>
         </div>
       </div>
 
