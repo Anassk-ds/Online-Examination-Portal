@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from './useTheme.js';
-import { getExams, getResults } from './localData.js';
+import { getExams, getResults, hasAttempted } from './localData.js';
 import StudyNotes from './StudyNotes.jsx';
 
 const StudentDashboard = () => {
@@ -37,9 +37,8 @@ const StudentDashboard = () => {
 };
 
   const handleLaunchExam = (examId) => {
-    const alreadyTaken = getResults().some((r) => r.studentEmail === studentEmail && r.examId === examId);
-    if (alreadyTaken) {
-      alert('You have already submitted this exam.');
+    if (hasAttempted(examId, studentEmail)) {
+      alert('You have already submitted this exam. Each exam can only be attempted once.');
       return;
     }
     navigate(`/take-exam/${examId}`);
@@ -103,6 +102,7 @@ const StudentDashboard = () => {
                   const isUpcoming = currentTime < start;
                   const isExpired = currentTime > end;
                   const isOpen = !isUpcoming && !isExpired;
+                  const attempted = hasAttempted(exam._id, studentEmail);
 
                   return (
                     <div key={exam._id} className="dash-item-card card-animated">
@@ -115,9 +115,15 @@ const StudentDashboard = () => {
                       </div>
                       <div className="dash-item-actions">
                         <button onClick={() => handleViewExamDetails(exam._id)} className="dash-btn-view btn-animated">📋 View</button>
-                        {isOpen && <button onClick={() => handleLaunchExam(exam._id)} className="dash-btn-start btn-animated">Start Exam ➔</button>}
-                        {isUpcoming && <span className="dash-badge-locked">🔒 Locked</span>}
-                        {isExpired && <span className="dash-badge-expired">🛑 Expired</span>}
+                        {attempted ? (
+                          <span className="dash-badge-attempted">✅ Attempted</span>
+                        ) : isOpen ? (
+                          <button onClick={() => handleLaunchExam(exam._id)} className="dash-btn-start btn-animated">Start Exam ➔</button>
+                        ) : isUpcoming ? (
+                          <span className="dash-badge-locked">🔒 Locked</span>
+                        ) : (
+                          <span className="dash-badge-expired">🛑 Expired</span>
+                        )}
                       </div>
                     </div>
                   );
@@ -162,7 +168,21 @@ const StudentDashboard = () => {
                                 {typeof ans === 'object' ? (
                                   <div style={{ marginTop: '4px' }}>
                                     <span className="dash-answer-lang-tag">{ans.lang?.toUpperCase()}</span>
+                                    {ans.totalCases !== undefined && (
+                                      <span className={`dash-testcase-summary ${ans.passedCount === ans.totalCases && ans.totalCases > 0 ? 'pass' : 'partial'}`}>
+                                        {ans.passedCount}/{ans.totalCases} test cases passed
+                                      </span>
+                                    )}
                                     <pre className="dash-answer-code">{ans.code}</pre>
+                                    {ans.testCaseResults && ans.testCaseResults.length > 0 && (
+                                      <div className="dash-testcase-list">
+                                        {ans.testCaseResults.map((tc, i) => (
+                                          <div key={i} className={`dash-testcase-chip ${tc.skipped ? 'skip' : tc.passed ? 'pass' : 'fail'}`}>
+                                            #{i + 1} {tc.skipped ? '⚠ skipped' : tc.passed ? '✔ passed' : '✘ failed'}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                 ) : (
                                   <span style={{ color: '#475569', fontWeight: '600' }}>Selected: {ans}</span>
