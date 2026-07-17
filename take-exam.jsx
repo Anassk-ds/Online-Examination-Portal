@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getExams, getResults, saveResults } from './localData.js';
+import { getExams, getResults, saveResults, hasAttempted } from './localData.js';
+import { runCode, runTestCases, getStarterCode, LANGUAGE_LABELS } from './codeRunner.js';
 
 const TakeExam = () => {
   const { id: examId } = useParams();
@@ -13,14 +14,26 @@ const TakeExam = () => {
   const [timeLeft, setTimeLeft] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [alreadyDone, setAlreadyDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [gradingMessage, setGradingMessage] = useState('');
   const [localCode, setLocalCode] = useState('');
+  const [runStdin, setRunStdin] = useState('');
+  const [runOutput, setRunOutput] = useState(null);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState(null); // holds the final graded result once submitted
 
   const studentEmail = localStorage.getItem('userEmail') || 'student@domain.com';
 
   useEffect(() => {
     if (!examId) {
       setError('No exam was specified.');
+      setLoading(false);
+      return;
+    }
+
+    if (hasAttempted(examId, studentEmail)) {
+      setAlreadyDone(true);
       setLoading(false);
       return;
     }
@@ -45,7 +58,7 @@ const TakeExam = () => {
   }, [examId]);
 
   useEffect(() => {
-    if (timeLeft === null) return;
+    if (timeLeft === null || result) return;
     if (timeLeft <= 0) {
       handleAutoSubmit();
       return;
@@ -53,11 +66,15 @@ const TakeExam = () => {
     const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeLeft]);
+  }, [timeLeft, result]);
 
   useEffect(() => {
     if (questions[currentIdx]?.type === 'coding') {
-      setLocalCode(answers[currentIdx]?.code || '');
+      const existing = answers[currentIdx];
+      const lang = existing?.lang || questions[currentIdx]?.allowedLanguages?.[0] || 'javascript';
+      setLocalCode(existing?.code !== undefined ? existing.code : getStarterCode(lang));
+      setRunStdin(questions[currentIdx]?.sampleInput || '');
+      setRunOutput(null);
     }
   }, [currentIdx, questions]);
 
@@ -73,7 +90,9 @@ const TakeExam = () => {
 
   const handleLanguageChange = (langVal) => {
     const currentAnswer = answers[currentIdx] || { code: localCode, lang: langVal };
-    setAnswers({ ...answers, [currentIdx]: { ...currentAnswer, lang: langVal } });
+    const nextCode = currentAnswer.code && currentAnswer.code.trim() ? currentAnswer.code : getStarterCode(langVal);
+    setLocalCode(nextCode);
+    setAnswers({ ...answers, [currentIdx]: { ...currentAnswer, lang: langVal, code: nextCode } });
   };
 
   const formatTime = (seconds) => {
@@ -83,49 +102,151 @@ const TakeExam = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const gradeAndSave = () => {
-    let score = 0;
-    questions.forEach((q, idx) => {
-      const answer = answers[idx];
-      if (q.type === 'coding') {
-        if (answer?.code && answer.code.trim().length > 10) score++;
-      } else if (answer === q.correct) {
-        score++;
-      }
-    });
+  const currentLang = () => answers[currentIdx]?.lang || questions[currentIdx]?.allowedLanguages?.[0] || 'javascript';
 
-    const result = {
+  const handleRunCode = async () => {
+    setRunning(true);
+    setRunOutput(null);
+    const res = await runCode(currentLang(), localCode, runStdin);
+    setRunOutput(res);
+    setRunning(false);
+  };
+
+  const gradeAndSave = async () => {
+    let score = 0;
+    const finalAnswers = {};
+
+    for (let idx = 0; idx < questions.length; idx++) {
+      const q = questions[idx];
+      const answer = answers[idx];
+
+      if (q.type === 'coding') {
+        const code = answer?.code || '';
+        const lang = answer?.lang || q.allowedLanguages?.[0] || 'javascript';
+        const testCases = q.testCases || [];
+
+        if (!code.trim() || testCases.length === 0) {
+          finalAnswers[idx] = { code, lang, testCaseResults: [], passedCount: 0, totalCases: testCases.length };
+          continue;
+        }
+
+        setGradingMessage(`Running your code for Question ${idx + 1} of ${questions.length}...`);
+        const { results, apiFailed } = await runTestCases(lang, code, testCases);
+        const passedCount = results.filter((r) => r.passed).length;
+        const questionScore = testCases.length ? passedCount / testCases.length : 0;
+        score += questionScore;
+
+        finalAnswers[idx] = {
+          code,
+          lang,
+          testCaseResults: results,
+          passedCount,
+          totalCases: testCases.length,
+          apiFailed
+        };
+      } else {
+        finalAnswers[idx] = answer;
+        if (answer === q.correct) score++;
+      }
+    }
+
+    setGradingMessage('');
+
+    const finalResult = {
       id: crypto.randomUUID(),
       studentEmail,
       examId,
       examTitle: exam?.title || 'Exam Session',
-      score,
+      score: Math.round(score * 100) / 100,
       totalQuestions: questions.length,
-      studentAnswers: answers,
+      studentAnswers: finalAnswers,
       createdAt: new Date().toISOString()
     };
 
-    saveResults([...getResults(), result]);
+    saveResults([...getResults(), finalResult]);
+    return finalResult;
   };
 
-  const handleAutoSubmit = () => {
+  const handleAutoSubmit = async () => {
     if (submitting) return;
     setSubmitting(true);
-    gradeAndSave();
-    alert('🛑 Time expired! Your answers were automatically saved.');
-    navigate('/dashboard');
+    const savedResult = await gradeAndSave();
+    setSubmitting(false);
+    setResult(savedResult);
   };
 
-  const manualSubmit = () => {
+  const manualSubmit = async () => {
     if (!window.confirm('Are you sure you want to submit your exam?')) return;
     setSubmitting(true);
-    gradeAndSave();
-    alert('🎉 Exam submitted successfully!');
-    navigate('/dashboard');
+    const savedResult = await gradeAndSave();
+    setSubmitting(false);
+    setResult(savedResult);
   };
 
   if (loading) return <div className="exam-fallback-screen">🔄 Loading Exam...</div>;
+
+  if (alreadyDone) {
+    return (
+      <div className="exam-fallback-screen" style={{ flexDirection: 'column', gap: '16px' }}>
+        <span style={{ fontSize: '40px' }}>🔒</span>
+        <span>You've already submitted this exam. Each exam can only be attempted once.</span>
+        <button onClick={() => navigate('/dashboard')} className="dash-btn-view btn-animated">← Back to Dashboard</button>
+      </div>
+    );
+  }
+
   if (error) return <div className="exam-fallback-screen" style={{ color: '#ef4444', fontWeight: 'bold' }}>{error}</div>;
+
+  if (submitting && !result) {
+    return (
+      <div className="exam-fallback-screen" style={{ flexDirection: 'column', gap: '14px' }}>
+        <div className="spinner" />
+        <span>{gradingMessage || 'Submitting your exam...'}</span>
+      </div>
+    );
+  }
+
+  // Post-submission result screen
+  if (result) {
+    const scoreLabel = Number.isInteger(result.score) ? result.score : result.score.toFixed(2);
+    return (
+      <div className="result-screen">
+        <div className="result-card">
+          <span className="result-emoji">🎉</span>
+          <h2 className="result-title">Exam Submitted!</h2>
+          <p className="result-subtitle">{result.examTitle}</p>
+          <div className="result-score-badge">{scoreLabel} / {result.totalQuestions}</div>
+
+          <div className="result-breakdown">
+            {questions.map((q, idx) => {
+              const ans = result.studentAnswers[idx];
+              if (q.type === 'coding') {
+                return (
+                  <div key={idx} className="result-breakdown-row">
+                    <span>Question {idx + 1} (Coding)</span>
+                    <span className={ans?.passedCount === ans?.totalCases && ans?.totalCases > 0 ? 'result-pass' : 'result-partial'}>
+                      {ans?.passedCount ?? 0}/{ans?.totalCases ?? 0} test cases passed
+                    </span>
+                  </div>
+                );
+              }
+              const correct = ans === q.correct;
+              return (
+                <div key={idx} className="result-breakdown-row">
+                  <span>Question {idx + 1} (MCQ)</span>
+                  <span className={correct ? 'result-pass' : 'result-fail'}>{correct ? '✔ Correct' : '✘ Incorrect'}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <button onClick={() => navigate('/dashboard')} className="publish-btn btn-animated" style={{ marginTop: '20px' }}>
+            Go to Dashboard →
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const currentQuestion = questions[currentIdx];
   const totalQuestions = questions.length;
@@ -151,17 +272,30 @@ const TakeExam = () => {
             <div className="exam-left-panel">
               <span className="exam-question-badge">QUESTION {currentIdx + 1} OF {totalQuestions} (CODING)</span>
               <p style={{ color: '#e2e8f0', fontSize: '16px', lineHeight: 1.7, margin: 0 }}>{currentQuestion.codingProblemStatement || currentQuestion.text}</p>
+
+              {(currentQuestion.sampleInput || currentQuestion.sampleOutput) && (
+                <div className="sample-io-box">
+                  <div className="sample-io-block">
+                    <span className="sample-io-label">Sample Input</span>
+                    <pre className="sample-io-value">{currentQuestion.sampleInput || '(none)'}</pre>
+                  </div>
+                  <div className="sample-io-block">
+                    <span className="sample-io-label">Sample Output</span>
+                    <pre className="sample-io-value">{currentQuestion.sampleOutput || '(none)'}</pre>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="exam-right-panel">
               <div className="exam-editor-toolbar">
                 <span className="exam-timer-label">💻 CODE EDITOR</span>
                 <select
-                  value={answers[currentIdx]?.lang || currentQuestion.allowedLanguages?.[0] || 'javascript'}
+                  value={currentLang()}
                   onChange={(e) => handleLanguageChange(e.target.value)}
                   className="exam-lang-select"
                 >
                   {(currentQuestion.allowedLanguages || ['javascript', 'python', 'java']).map((l) => (
-                    <option key={l} value={l}>{l.toUpperCase()}</option>
+                    <option key={l} value={l}>{(LANGUAGE_LABELS[l] || l).toUpperCase()}</option>
                   ))}
                 </select>
               </div>
@@ -172,6 +306,38 @@ const TakeExam = () => {
                 className="exam-code-editor"
                 spellCheck="false"
               />
+
+              <div className="run-panel">
+                <div className="run-panel-header">
+                  <span className="exam-timer-label">▶️ TEST YOUR CODE</span>
+                  <button onClick={handleRunCode} disabled={running} className="run-btn btn-animated">
+                    {running ? 'Running…' : '▶ Run Code'}
+                  </button>
+                </div>
+                <textarea
+                  value={runStdin}
+                  onChange={(e) => setRunStdin(e.target.value)}
+                  placeholder="Custom input (stdin)..."
+                  className="run-stdin-box"
+                  spellCheck="false"
+                  rows={2}
+                />
+                {runOutput && (
+                  <div className="run-output-box">
+                    {runOutput.ok ? (
+                      <>
+                        <div className={`run-status ${runOutput.success ? 'run-status-ok' : 'run-status-error'}`}>
+                          {runOutput.status}
+                        </div>
+                        {runOutput.stdout && <pre className="run-output-stdout">{runOutput.stdout}</pre>}
+                        {runOutput.stderr && <pre className="run-output-stderr">{runOutput.stderr}</pre>}
+                      </>
+                    ) : (
+                      <div className="run-status run-status-error">{runOutput.error}</div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ) : (
