@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from './useTheme.js';
 import { getUsers, saveUsers } from './localData.js';
+import { FiSun, FiMoon, FiEye, FiEyeOff, FiUser, FiMail, FiLock, FiShield, FiArrowRight } from 'react-icons/fi';
 
 const IndexPortal = () => {
   const navigate = useNavigate();
@@ -27,6 +28,9 @@ const IndexPortal = () => {
   const [adminPassword, setAdminPassword] = useState('');
   const [masterAdminEmail, setMasterAdminEmail] = useState('');
   const [isAdminRegister, setIsAdminRegister] = useState(false);
+
+  const [showStudentPassword, setShowStudentPassword] = useState(false);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -93,7 +97,7 @@ const IndexPortal = () => {
         className="theme-toggle-btn btn-animated"
         style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 10 }}
       >
-        {theme === 'light' ? '🌙' : '☀️'}
+        {theme === 'light' ? <FiMoon /> : <FiSun />}
       </button>
 
       {/* Student panel */}
@@ -120,7 +124,12 @@ const IndexPortal = () => {
             </div>
             <div className="portal-field">
               <label className="portal-label">Password</label>
-              <input type="password" placeholder="••••••••" value={studentPassword} onChange={e => setStudentPassword(e.target.value)} required className="portal-input input-animated" />
+              <div style={{ position: 'relative' }}>
+                <input type={showStudentPassword ? 'text' : 'password'} placeholder="••••••••" value={studentPassword} onChange={e => setStudentPassword(e.target.value)} required className="portal-input input-animated" style={{ paddingRight: '40px' }} />
+                <button type="button" onClick={() => setShowStudentPassword(!showStudentPassword)} className="password-toggle-btn" aria-label="Toggle password visibility">
+                  {showStudentPassword ? <FiEyeOff /> : <FiEye />}
+                </button>
+              </div>
             </div>
 
             <button type="submit" className="portal-btn-student btn-animated">
@@ -137,7 +146,7 @@ const IndexPortal = () => {
           <div className="portal-switch-box">
             <p>Need administrative tools?</p>
             <button type="button" onClick={() => { setError(''); setSuccess(''); setActivePanel(1); }} className="portal-slide-btn btn-animated">
-              Slide to Admin Console ➔
+              Slide to Admin Console <FiArrowRight style={{ marginLeft: '4px' }} />
             </button>
           </div>
         </div>
@@ -167,7 +176,12 @@ const IndexPortal = () => {
             </div>
             <div className="portal-field">
               <label className="portal-label-dark">Password</label>
-              <input type="password" placeholder="••••••••" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} required className="portal-input-dark input-animated" />
+              <div style={{ position: 'relative' }}>
+                <input type={showAdminPassword ? 'text' : 'password'} placeholder="••••••••" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} required className="portal-input-dark input-animated" style={{ paddingRight: '40px' }} />
+                <button type="button" onClick={() => setShowAdminPassword(!showAdminPassword)} className="password-toggle-btn password-toggle-btn-dark" aria-label="Toggle password visibility">
+                  {showAdminPassword ? <FiEyeOff /> : <FiEye />}
+                </button>
+              </div>
             </div>
 
             {isAdminRegister && (
@@ -191,7 +205,7 @@ const IndexPortal = () => {
           <div className="portal-switch-box" style={{ borderTop: '1px solid #374151' }}>
             <p style={{ color: '#9ca3af' }}>Are you a student?</p>
             <button type="button" onClick={() => { setError(''); setSuccess(''); setActivePanel(0); }} className="portal-slide-btn btn-animated" style={{ color: '#94a3b8', borderColor: '#4b5563' }}>
-              🪟 Return to Student Portal
+              <FiUser style={{ marginRight: '6px' }} /> Return to Student Portal
             </button>
           </div>
         </div>
