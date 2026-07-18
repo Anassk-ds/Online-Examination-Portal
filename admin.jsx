@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from './useTheme.js';
 import { getUsers, saveUsers, getExams, saveExams, getResults } from './localData.js';
 import { CODING_QUESTION_BANK } from './questionBank.js';
+import { FiHome, FiBook, FiPlusCircle, FiCheckSquare, FiInbox, FiSun, FiMoon, FiLogOut } from 'react-icons/fi';
 
 const emptyTestCase = () => ({ input: '', output: '' });
 
@@ -22,11 +23,11 @@ const emptyQuestion = () => ({
 });
 
 const NAV_ITEMS = [
-  { key: 'overview', label: '🏠 Overview' },
-  { key: 'manageExams', label: '📚 Manage Exams' },
-  { key: 'createExam', label: '📝 Create Exam' },
-  { key: 'approvals', label: '✅ Approvals' },
-  { key: 'submissions', label: '📨 Submissions' }
+  { key: 'overview', label: 'Overview', icon: <FiHome /> },
+  { key: 'manageExams', label: 'Manage Exams', icon: <FiBook /> },
+  { key: 'createExam', label: 'Create Exam', icon: <FiPlusCircle /> },
+  { key: 'approvals', label: 'Approvals', icon: <FiCheckSquare /> },
+  { key: 'submissions', label: 'Submissions', icon: <FiInbox /> }
 ];
 
 const AdminPanel = () => {
@@ -227,7 +228,7 @@ const AdminPanel = () => {
     <div className="dash-container page-fade-in">
       <div className="dash-sidebar sidebar-fade-in">
         <div className="dash-sidebar-header">
-          <h3>🛠️ Admin Console</h3>
+          <h3><span className="dash-avatar">A</span> Admin Console</h3>
           <p>Manage exams &amp; students</p>
         </div>
         <div className="dash-nav">
@@ -237,7 +238,7 @@ const AdminPanel = () => {
               onClick={() => (item.key === 'createExam' && !editingExamId ? openCreateExam() : setActiveTab(item.key))}
               className={`dash-nav-btn sidebar-item-animated ${activeTab === item.key ? 'active' : ''}`}
             >
-              {item.label}
+              {item.icon} {item.label}
               {item.key === 'approvals' && pendingStudents.length > 0 && (
                 <span className="nav-badge">{pendingStudents.length}</span>
               )}
@@ -246,10 +247,10 @@ const AdminPanel = () => {
         </div>
         <div className="dash-theme-row">
           <button onClick={toggleTheme} className="theme-toggle-btn btn-animated" style={{ width: '100%' }}>
-            {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+            {theme === 'light' ? <><FiMoon /> Dark Mode</> : <><FiSun /> Light Mode</>}
           </button>
         </div>
-        <button onClick={handleLogout} className="dash-logout-btn btn-animated">🚪 Log Out</button>
+        <button onClick={handleLogout} className="dash-logout-btn btn-animated"><FiLogOut /> Log Out</button>
       </div>
 
       <div className="dash-main">
@@ -311,7 +312,7 @@ const AdminPanel = () => {
         {activeTab === 'manageExams' && (
           <div className="dash-section-card card-animated">
             <div className="pane-heading-row">
-              <h3 className="dash-section-title" style={{ margin: 0 }}>📚 Manage Exams</h3>
+              <h3 className="dash-section-title" style={{ margin: 0 }}><FiBook /> Manage Exams</h3>
               <button onClick={openCreateExam} className="publish-btn btn-animated">+ Create Exam</button>
             </div>
             {exams.length === 0 ? (
@@ -565,7 +566,7 @@ const AdminPanel = () => {
 
         {activeTab === 'approvals' && (
           <div className="dash-section-card card-animated">
-            <h3 className="dash-section-title">✅ Pending Student Approvals</h3>
+            <h3 className="dash-section-title"><FiCheckSquare /> Pending Student Approvals</h3>
             {pendingStudents.length === 0 ? (
               <div className="dash-empty-state">No students awaiting approval.</div>
             ) : (
@@ -588,7 +589,7 @@ const AdminPanel = () => {
 
         {activeTab === 'submissions' && (
           <div className="dash-section-card card-animated">
-            <h3 className="dash-section-title">📨 Recent Submissions</h3>
+            <h3 className="dash-section-title"><FiInbox /> Recent Submissions</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {submissions.length === 0 ? (
                 <div className="dash-empty-state">No submissions yet.</div>
