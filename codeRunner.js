@@ -101,6 +101,17 @@ export const runTestCases = async (lang, sourceCode, testCases = []) => {
   let apiFailed = false;
 
   for (const tc of testCases) {
+    const expected = (tc.output || '').trim();
+
+    // A test case with no expected output can never meaningfully grade code —
+    // treat it as invalid rather than letting any output (including none)
+    // count as a pass. This closes the "any code passes" hole caused by
+    // exams saved with a blank expected-output field.
+    if (!expected) {
+      results.push({ input: tc.input, expected: tc.output, actual: '', passed: false, skipped: true, error: 'Test case has no expected output configured — ask your instructor to fix this exam.' });
+      continue;
+    }
+
     if (apiFailed) {
       results.push({ input: tc.input, expected: tc.output, actual: '', passed: false, skipped: true });
       continue;
@@ -114,7 +125,6 @@ export const runTestCases = async (lang, sourceCode, testCases = []) => {
     }
 
     const actual = (run.stdout || '').trim();
-    const expected = (tc.output || '').trim();
     results.push({
       input: tc.input,
       expected: tc.output,
