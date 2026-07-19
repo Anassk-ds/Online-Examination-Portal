@@ -22,7 +22,7 @@ export const saveExams = (exams) => write('lsExams', exams);
 export const getResults = () => read('lsResults', []);
 export const saveResults = (results) => write('lsResults', results);
 
-// A student may attempt any given exam only once. Every place that lets a
+//// A student may attempt any given exam only once. Every place that lets a
 // student start/resume/submit an exam should route through this check.
 export const hasAttempted = (examId, studentEmail) =>
   getResults().some((r) => r.examId === examId && r.studentEmail === studentEmail);
