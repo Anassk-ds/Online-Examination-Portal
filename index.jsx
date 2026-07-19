@@ -101,11 +101,11 @@ const IndexPortal = () => {
       </button>
 
       {/* Student panel */}
-      <div className="portal-panel" style={{ display: activePanel === 0 ? 'flex' : 'none' }}>
+      <div className={`portal-panel ${activePanel === 0 ? 'portal-panel-active' : 'portal-panel-leaving-left'}`}>
         <div className="portal-card card-animated">
           <div className="portal-header">
-            <h2 style={{ color: '#1f2937' }}>Student Portal</h2>
-            <p style={{ color: '#6b7280' }}>Online Examination Terminal</p>
+            <h2>Student Portal</h2>
+            <p>Online Examination Terminal</p>
           </div>
 
           {error && activePanel === 0 && <div className="alert-error">{error}</div>}
@@ -153,7 +153,7 @@ const IndexPortal = () => {
       </div>
 
       {/* Admin panel */}
-      <div className="portal-panel portal-panel-dark" style={{ display: activePanel === 1 ? 'flex' : 'none' }}>
+      <div className={`portal-panel portal-panel-dark ${activePanel === 1 ? 'portal-panel-active' : 'portal-panel-leaving-right'}`}>
         <div className="portal-card portal-card-dark card-animated">
           <div className="portal-header">
             <h2 style={{ color: '#f9fafb' }}>Admin Console</h2>
