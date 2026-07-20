@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 :root {
     --primary: #2563eb;
     --primary-hover: #1d4ed8;
@@ -2063,8 +2065,6 @@ body {
 /* existing selectors (same class names, no renames) with a more         */
 /* modern palette, spacing, elevation, motion and responsiveness.        */
 /* ===================================================================== */
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
     /* Refined premium palette (indigo/violet) — same variable names,
