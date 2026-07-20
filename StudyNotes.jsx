@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-//
+
 const notesKey = (email) => `studyNotes:${email}`;
 const activityKey = (email) => `studyNotesActivity:${email}`;
 const SEARCH_SESSION_KEY = 'studyNotesSearchTerm';
@@ -139,6 +139,47 @@ const StudyNotes = ({ studentEmail }) => {
     );
   });
 
+  const emptyMessage = notes.length === 0 ? 'No notes yet — add your first one above.' : 'No notes match your search.';
+
+  let notesListContent = null;
+  if (filteredNotes.length === 0) {
+    notesListContent = <div className="dash-empty-state">{emptyMessage}</div>;
+  } else {
+    notesListContent = (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+        {filteredNotes.map((note) => {
+          const isConfirmingDelete = confirmingDeleteId === note.id;
+          let deleteControl = <button onClick={() => setConfirmingDeleteId(note.id)} className="note-icon-btn-danger">🗑️ Delete</button>;
+          if (isConfirmingDelete) {
+            deleteControl = (
+              <div className="note-confirm-row">
+                <span className="note-confirm-text">Delete?</span>
+                <button onClick={() => handleConfirmDelete(note)} className="note-confirm-yes">Yes</button>
+                <button onClick={() => setConfirmingDeleteId(null)} className="note-confirm-no">No</button>
+              </div>
+            );
+          }
+
+          return (
+            <div key={note.id} className="note-card">
+              <div className="note-card-header">
+                <div>
+                  <h4 className="note-title">{note.title}</h4>
+                  {note.examTitle && <span className="note-exam-tag">{note.examTitle}</span>}
+                </div>
+                <div className="note-actions">
+                  <button onClick={() => handleEditClick(note)} className="note-icon-btn">✏️ Edit</button>
+                  {deleteControl}
+                </div>
+              </div>
+              <p className="note-content">{note.content}</p>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className="dash-section-card card-animated">
       <div className="notes-header-row">
@@ -177,37 +218,8 @@ const StudyNotes = ({ studentEmail }) => {
         style={{ marginTop: '20px', marginBottom: '16px' }}
       />
 
-      {filteredNotes.length === 0 ? (
-        <div className="dash-empty-state">
-          {notes.length === 0 ? 'No notes yet — add your first one above.' : 'No notes match your search.'}
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-          {filteredNotes.map((note) => (
-            <div key={note.id} className="note-card">
-              <div className="note-card-header">
-                <div>
-                  <h4 className="note-title">{note.title}</h4>
-                  {note.examTitle && <span className="note-exam-tag">{note.examTitle}</span>}
-                </div>
-                <div className="note-actions">
-                  <button onClick={() => handleEditClick(note)} className="note-icon-btn">✏️ Edit</button>
-                  {confirmingDeleteId === note.id ? (
-                    <div className="note-confirm-row">
-                      <span className="note-confirm-text">Delete?</span>
-                      <button onClick={() => handleConfirmDelete(note)} className="note-confirm-yes">Yes</button>
-                      <button onClick={() => setConfirmingDeleteId(null)} className="note-confirm-no">No</button>
-                    </div>
-                  ) : (
-                    <button onClick={() => setConfirmingDeleteId(note.id)} className="note-icon-btn-danger">🗑️ Delete</button>
-                  )}
-                </div>
-              </div>
-              <p className="note-content">{note.content}</p>
-            </div>
-          ))}
-        </div>
-    
+      {notesListContent}
+
       {activity.length > 0 && (
         <div className="notes-activity-box">
           <h5 className="notes-activity-title">RECENT ACTIVITY</h5>
