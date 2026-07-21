@@ -6,7 +6,10 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '/api': {
+      // Trailing slash matters: '/api/' matches real calls like
+      // '/api/exams', but does NOT match a file like 'apiClient.js'
+      // just because its name happens to start with "api".
+      '/api/': {
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
