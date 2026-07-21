@@ -172,7 +172,7 @@ const StudentDashboard = () => {
                           <span style={{ fontSize: '11px', color: '#94a3b8' }}>{new Date(res.createdAt).toLocaleString()}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                          <span style={{ fontWeight: 'bold', fontSize: '16px', color: '#10b981' }}>{res.score}/{res.totalQuestions}</span>
+                          <span style={{ fontWeight: 'bold', fontSize: '16px', color: '#10b981' }}>{res.score}/{res.totalMarks ?? res.totalQuestions}</span>
                           <button onClick={() => toggleResultExpansion(res.id)} className="dash-result-expand-btn btn-animated">
                             {isExpanded ? 'Hide ▲' : 'View Details ▼'}
                           </button>
