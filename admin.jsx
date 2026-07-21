@@ -626,7 +626,7 @@ const AdminPanel = () => {
                       <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{sub.examTitle || 'Exam Attempt'}</div>
                       <div style={{ fontSize: '11px', color: 'var(--text)', opacity: 0.7 }}>{sub.studentEmail || 'Unknown student'}</div>
                     </div>
-                    <span className="score-badge">{sub.score}/{sub.totalQuestions}</span>
+                    <span className="score-badge">{sub.score}/{sub.totalMarks ?? sub.totalQuestions}</span>
                   </div>
                 ))
               )}
