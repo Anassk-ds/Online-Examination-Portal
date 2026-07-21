@@ -7,7 +7,7 @@ import StudentDashboard from './student-dashboard.jsx';
 import TakeExam from './take-exam.jsx';
 import ExamDetails from './ExamDetails.jsx';
 import NotFound from './NotFound.jsx';
-///
+
 const App = () => {
   return (
     <BrowserRouter>
