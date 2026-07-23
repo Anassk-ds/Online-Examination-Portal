@@ -29,6 +29,8 @@ const unwrap = async (promise) => {
 // ---- Auth ----
 export const registerUser = (payload) => unwrap(client.post('/auth/register', payload));
 export const loginUser = (payload) => unwrap(client.post('/auth/login', payload));
+export const forgotPassword = (payload) => unwrap(client.post('/auth/forgot-password', payload));
+export const resetPassword = (token, password) => unwrap(client.post(`/auth/reset-password/${token}`, { password }));
 
 // ---- Users / Admin ----
 export const getPendingStudents = () => unwrap(client.get('/users/pending'));
