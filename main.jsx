@@ -1,7 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import IndexPortal from './index.jsx';
+import Landing from './Landing.jsx';
+import Login from './Login.jsx';
+import ForgotPassword from './ForgotPassword.jsx';
+import ResetPassword from './ResetPassword.jsx';
 import AdminPanel from './admin.jsx';
 import StudentDashboard from './student-dashboard.jsx';
 import TakeExam from './take-exam.jsx';
@@ -12,7 +15,10 @@ const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<IndexPortal />} />
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/dashboard" element={<StudentDashboard />} />
         <Route path="/exams/:id" element={<ExamDetails />} />
