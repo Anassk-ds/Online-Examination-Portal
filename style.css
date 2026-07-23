@@ -2519,6 +2519,7 @@ h1, h2, h3, h4, h5 {
     .dash-theme-row, .dash-logout-btn { margin: 6px 0 6px auto !important; }
     .dash-main { padding: 18px !important; }
     .dash-metrics-grid { grid-template-columns: 1fr 1fr !important; }
+    .dash-overview-grid { grid-template-columns: 1fr !important; }
 
     .exam-body { flex-direction: column; overflow-y: auto; }
     .exam-left-panel, .exam-right-panel { width: 100% !important; }
