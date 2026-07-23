@@ -39,8 +39,9 @@ const AdminPanel = () => {
   const { theme, toggleTheme } = useTheme();
 
   const [activeTab, setActiveTab] = useState('overview');
+  const adminName = localStorage.getItem('userName') || 'Admin';
 
-  const [stats, setStats] = useState({ totalExams: 0, approvedStudents: 0 });
+  const [stats, setStats] = useState({ totalExams: 0, approvedStudents: 0, totalStudents: 0, totalResults: 0, upcomingExams: 0 });
   const [submissions, setSubmissions] = useState([]);
   const [pendingStudents, setPendingStudents] = useState([]);
   const [exams, setExams] = useState([]);
@@ -49,6 +50,7 @@ const AdminPanel = () => {
   const [examTitle, setExamTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState(60);
   const [questions, setQuestions] = useState([emptyQuestion()]);
   const [editingExamId, setEditingExamId] = useState(null);
   const [examToDelete, setExamToDelete] = useState(null);
@@ -146,6 +148,7 @@ const AdminPanel = () => {
     setExamTitle('');
     setStartDate('');
     setEndDate('');
+    setDurationMinutes(60);
     setQuestions([emptyQuestion()]);
     setEditingExamId(null);
     setMessage('');
@@ -168,6 +171,10 @@ const AdminPanel = () => {
     }
     if (new Date(endDate) <= new Date(startDate)) {
       setError('End date must be after the start date.');
+      return;
+    }
+    if (!durationMinutes || Number(durationMinutes) <= 0) {
+      setError('Please set how many minutes students get once they start the exam.');
       return;
     }
     for (const q of questions) {
@@ -193,6 +200,7 @@ const AdminPanel = () => {
       title: examTitle,
       startDate: new Date(startDate).toISOString(),
       endDate: new Date(endDate).toISOString(),
+      durationMinutes: Number(durationMinutes),
       questions
     };
 
@@ -217,6 +225,7 @@ const AdminPanel = () => {
     setExamTitle(exam.title);
     setStartDate(exam.startDate ? exam.startDate.slice(0, 16) : '');
     setEndDate(exam.endDate ? exam.endDate.slice(0, 16) : '');
+    setDurationMinutes(exam.durationMinutes ?? 60);
     setQuestions(
       exam.questions && exam.questions.length
         ? exam.questions.map((q) => ({ testCases: [emptyTestCase()], sampleInput: '', sampleOutput: '', marks: 1, ...q }))
@@ -247,8 +256,6 @@ const AdminPanel = () => {
   };
 
   if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#475569' }}>Loading admin dashboard...</div>;
-
-  const attemptedCount = submissions.length;
 
   return (
     <div className="dash-container page-fade-in">
@@ -286,56 +293,70 @@ const AdminPanel = () => {
 
       <div className="dash-main">
         {activeTab === 'overview' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div className="dash-banner">
-              <h1>Welcome back, Admin</h1>
+              <h1>Welcome back, {adminName}! 👋</h1>
               <p>Here's what's happening across your exam portal.</p>
             </div>
+
             <div className="dash-metrics-grid">
               <div className="dash-metric-card card-animated">
                 <span className="dash-metric-label">TOTAL EXAMS</span>
                 <div className="dash-metric-value">{stats.totalExams}</div>
               </div>
               <div className="dash-metric-card card-animated">
-                <span className="dash-metric-label">APPROVED STUDENTS</span>
-                <div className="dash-metric-value">{stats.approvedStudents}</div>
+                <span className="dash-metric-label">TOTAL STUDENTS</span>
+                <div className="dash-metric-value">{stats.totalStudents}</div>
               </div>
               <div className="dash-metric-card card-animated">
-                <span className="dash-metric-label">PENDING APPROVALS</span>
-                <div className="dash-metric-value">{pendingStudents.length}</div>
+                <span className="dash-metric-label">TOTAL RESULTS</span>
+                <div className="dash-metric-value">{stats.totalResults}</div>
               </div>
               <div className="dash-metric-card card-animated">
-                <span className="dash-metric-label">SUBMISSIONS</span>
-                <div className="dash-metric-value">{attemptedCount}</div>
+                <span className="dash-metric-label">UPCOMING EXAMS</span>
+                <div className="dash-metric-value">{stats.upcomingExams}</div>
               </div>
             </div>
 
-            <div className="panel-card">
-              <div className="pane-heading-row">
-                <h3 className="pane-heading" style={{ margin: 0 }}>Your Exams</h3>
-                <button onClick={openCreateExam} className="publish-btn btn-animated">+ Create Exam</button>
-              </div>
-              {exams.length === 0 ? (
-                <div className="dash-empty-state">No exams created yet — click "+ Create Exam" to publish your first one.</div>
-              ) : (
-                <table className="data-table">
-                  <thead>
-                    <tr><th>Title</th><th>Questions</th><th>Closes</th><th></th></tr>
-                  </thead>
-                  <tbody>
+            <div className="dash-overview-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', alignItems: 'start' }}>
+              <div className="panel-card">
+                <div className="pane-heading-row">
+                  <h3 className="pane-heading" style={{ margin: 0 }}>Recent Exams</h3>
+                </div>
+                {exams.length === 0 ? (
+                  <div className="dash-empty-state">No exams created yet — use Quick Actions to publish your first one.</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {exams.slice(0, 5).map((exam) => (
-                      <tr key={exam._id}>
-                        <td>{exam.title}</td>
-                        <td>{exam.questions?.length || 0}</td>
-                        <td>{new Date(exam.endDate).toLocaleDateString()}</td>
-                        <td style={{ textAlign: 'right' }}>
-                          <button onClick={() => handleEditExam(exam)} className="edit-btn btn-animated">Edit</button>
-                        </td>
-                      </tr>
+                      <div key={exam._id} className="dash-item-card card-animated">
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{exam.title}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{exam.questions?.length || 0} questions</div>
+                        </div>
+                        <button onClick={() => handleEditExam(exam)} className="dash-btn-view btn-animated">View Details</button>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
-              )}
+                  </div>
+                )}
+              </div>
+
+              <div className="panel-card">
+                <div className="pane-heading-row">
+                  <h3 className="pane-heading" style={{ margin: 0 }}>Quick Actions</h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <button onClick={openCreateExam} className="dash-item-card card-animated" style={{ width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'inherit' }}>
+                    <span>📝 Create Exam</span>
+                  </button>
+                  <button onClick={() => setActiveTab('approvals')} className="dash-item-card card-animated" style={{ width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'inherit' }}>
+                    <span>👤 Add Student</span>
+                    {pendingStudents.length > 0 && <span className="nav-badge">{pendingStudents.length}</span>}
+                  </button>
+                  <button onClick={() => setActiveTab('submissions')} className="dash-item-card card-animated" style={{ width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'inherit' }}>
+                    <span>📊 View Results</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -414,6 +435,26 @@ const AdminPanel = () => {
                     className="text-input input-animated"
                   />
                 </div>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0' }}>
+                Start/End define the window students can launch the exam during — not how long they get once they start.
+              </p>
+
+              <div className="field-group">
+                <label className="field-label">Exam Duration (minutes)</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={durationMinutes}
+                  onChange={e => setDurationMinutes(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="text-input input-animated"
+                  style={{ maxWidth: '160px' }}
+                />
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 0' }}>
+                  Every student gets exactly this many minutes on their own timer from the moment they click Start —
+                  regardless of how much of the Start/End window is left.
+                </p>
               </div>
 
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: '20px', marginTop: '10px' }}>
