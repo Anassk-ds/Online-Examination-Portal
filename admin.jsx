@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from './useTheme.js';
 import {
-  getPendingStudents, approveStudent, getAdminStats,
+  getPendingStudents, approveStudent, getAdminStats, getAllStudents,
   getExams, createExam, updateExam, deleteExam, getResults
 } from './apiClient.js';
 import { CODING_QUESTION_BANK } from './questionBank.js';
 import ChangePasswordModal from './ChangePasswordModal.jsx';
-import { FiHome, FiBook, FiPlusCircle, FiCheckSquare, FiInbox, FiSun, FiMoon, FiLogOut, FiKey } from 'react-icons/fi';
+import { FiHome, FiBook, FiPlusCircle, FiCheckSquare, FiInbox, FiSun, FiMoon, FiLogOut, FiKey, FiUsers, FiX } from 'react-icons/fi';
 
 const emptyTestCase = () => ({ input: '', output: '' });
 
@@ -32,6 +32,7 @@ const NAV_ITEMS = [
   { key: 'manageExams', label: 'Manage Exams', icon: <FiBook /> },
   { key: 'createExam', label: 'Create Exam', icon: <FiPlusCircle /> },
   { key: 'approvals', label: 'Approvals', icon: <FiCheckSquare /> },
+  { key: 'students', label: 'Students', icon: <FiUsers /> },
   { key: 'submissions', label: 'Submissions', icon: <FiInbox /> }
 ];
 
@@ -46,6 +47,8 @@ const AdminPanel = () => {
   const [stats, setStats] = useState({ totalExams: 0, approvedStudents: 0, totalStudents: 0, totalResults: 0, upcomingExams: 0 });
   const [submissions, setSubmissions] = useState([]);
   const [pendingStudents, setPendingStudents] = useState([]);
+  const [allStudents, setAllStudents] = useState([]);
+  const [selectedStudent, setSelectedStudent] = useState(null);
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,16 +68,18 @@ const AdminPanel = () => {
   const loadDashboardData = async () => {
     setLoadError('');
     try {
-      const [allExams, adminStats, pending, allResults] = await Promise.all([
+      const [allExams, adminStats, pending, allResults, students] = await Promise.all([
         getExams(),
         getAdminStats(),
         getPendingStudents(),
-        getResults()
+        getResults(),
+        getAllStudents()
       ]);
       setExams(allExams);
       setStats(adminStats);
       setPendingStudents(pending);
       setSubmissions(allResults);
+      setAllStudents(students);
     } catch (err) {
       setLoadError(err.message || 'Could not reach the server. Is the backend running?');
     } finally {
@@ -681,6 +686,38 @@ const AdminPanel = () => {
           </div>
         )}
 
+        {activeTab === 'students' && (
+          <div className="dash-section-card card-animated">
+            <h3 className="dash-section-title"><FiUsers /> All Students</h3>
+            {allStudents.length === 0 ? (
+              <div className="dash-empty-state">No students have registered yet.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {allStudents.map((student) => {
+                  const attemptCount = submissions.filter((s) => s.studentEmail === student.email).length;
+                  return (
+                    <button
+                      key={student.id}
+                      onClick={() => setSelectedStudent(student)}
+                      className="list-row btn-animated"
+                      style={{ width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'inherit' }}
+                    >
+                      <div style={{ overflow: 'hidden', paddingRight: '10px' }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{student.name}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text)', opacity: 0.7 }}>{student.email}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {!student.isApproved && <span className="dash-badge-locked">Pending</span>}
+                        <span className="score-badge">{attemptCount} exam{attemptCount === 1 ? '' : 's'} attempted</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'submissions' && (
           <div className="dash-section-card card-animated">
             <h3 className="dash-section-title"><FiInbox /> Recent Submissions</h3>
@@ -702,6 +739,46 @@ const AdminPanel = () => {
           </div>
         )}
       </div>
+
+      {selectedStudent && (
+        <div className="modal-overlay" onClick={() => setSelectedStudent(null)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+              <div>
+                <h3 style={{ margin: '0 0 4px' }}>{selectedStudent.name}</h3>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text)', opacity: 0.7 }}>{selectedStudent.email}</p>
+              </div>
+              <button onClick={() => setSelectedStudent(null)} className="password-toggle-btn" aria-label="Close" style={{ position: 'static' }}>
+                <FiX />
+              </button>
+            </div>
+
+            {(() => {
+              const studentResults = submissions.filter((s) => s.studentEmail === selectedStudent.email);
+              return studentResults.length === 0 ? (
+                <div className="dash-empty-state">This student hasn't attempted any exams yet.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 600 }}>
+                    {studentResults.length} exam{studentResults.length === 1 ? '' : 's'} attempted
+                  </p>
+                  {studentResults.map((sub) => (
+                    <div key={sub.id} className="list-row">
+                      <div style={{ overflow: 'hidden', paddingRight: '10px' }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{sub.examTitle || 'Exam Attempt'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text)', opacity: 0.7 }}>
+                          {sub.createdAt ? new Date(sub.createdAt).toLocaleString() : ''}
+                        </div>
+                      </div>
+                      <span className="score-badge">{sub.score}/{sub.totalMarks ?? sub.totalQuestions}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {bankPickerFor !== null && (
         <div className="modal-overlay">
