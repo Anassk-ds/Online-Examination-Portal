@@ -698,6 +698,80 @@ body {
     text-decoration: underline;
 }
 
+/* ---- Forgot Password page ---- */
+.fp-role-toggle {
+    display: flex;
+    gap: 8px;
+}
+.fp-role-btn {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background-color: #fff;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.fp-role-btn:hover {
+    border-color: #2563eb;
+    color: #2563eb;
+}
+.fp-role-btn-active {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+}
+.fp-role-btn-active:hover {
+    color: #fff;
+}
+[data-theme="dark"] .fp-role-btn {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #94a3b8;
+}
+[data-theme="dark"] .fp-role-btn-active {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    color: #fff;
+}
+
+.fp-input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.fp-success-box {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 0;
+}
+.fp-success-icon {
+    font-size: 42px;
+    color: #10b981;
+}
+.fp-success-box p {
+    color: var(--text-muted, #64748b);
+    line-height: 1.6;
+    margin: 0;
+}
+.fp-back-link {
+    text-decoration: none;
+    width: 100%;
+    display: inline-block;
+    text-align: center;
+    box-sizing: border-box;
+}
+
 .portal-switch-box {
     border-top: 1px solid #e5e7eb;
     margin-top: 25px;
