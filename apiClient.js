@@ -27,59 +27,27 @@ const unwrap = async (promise) => {
 };
 
 // ---- Auth ----
-export const registerUser = (payload) =>
-  unwrap(client.post('/auth/register', payload));
-
-export const loginUser = (payload) =>
-  unwrap(client.post('/auth/login', payload));
-
-export const forgotPassword = (payload) =>
-  unwrap(client.post('/auth/forgot-password', payload));
-
-export const resetPassword = (token, password) =>
-  unwrap(client.post(`/auth/reset-password/${token}`, { password }));
-
-export const changePassword = (payload) =>
-  unwrap(client.post('/auth/change-password', payload));
+export const registerUser = (payload) => unwrap(client.post('/auth/register', payload));
+export const loginUser = (payload) => unwrap(client.post('/auth/login', payload));
+export const forgotPassword = (payload) => unwrap(client.post('/auth/forgot-password', payload));
+export const resetPassword = (token, password) => unwrap(client.post(`/auth/reset-password/${token}`, { password }));
+export const changePassword = (payload) => unwrap(client.post('/auth/change-password', payload));
 
 // ---- Users / Admin ----
-export const getPendingStudents = () =>
-  unwrap(client.get('/users/pending'));
-
-export const approveStudent = (id) =>
-  unwrap(client.patch(`/users/${id}/approve`));
-
-export const getAdminStats = () =>
-  unwrap(client.get('/users/stats'));
+export const getPendingStudents = () => unwrap(client.get('/users/pending'));
+export const getAllStudents = () => unwrap(client.get('/users/students'));
+export const approveStudent = (id) => unwrap(client.patch(`/users/${id}/approve`));
+export const getAdminStats = () => unwrap(client.get('/users/stats'));
 
 // ---- Exams ----
-export const getExams = () =>
-  unwrap(client.get('/exams'));
-
-export const getExam = (id) =>
-  unwrap(client.get(`/exams/${id}`));
-
-export const createExam = (payload) =>
-  unwrap(client.post('/exams', payload));
-
-export const updateExam = (id, payload) =>
-  unwrap(client.put(`/exams/${id}`, payload));
-
-export const deleteExam = (id) =>
-  unwrap(client.delete(`/exams/${id}`));
+export const getExams = () => unwrap(client.get('/exams'));
+export const getExam = (id) => unwrap(client.get(`/exams/${id}`));
+export const createExam = (payload) => unwrap(client.post('/exams', payload));
+export const updateExam = (id, payload) => unwrap(client.put(`/exams/${id}`, payload));
+export const deleteExam = (id) => unwrap(client.delete(`/exams/${id}`));
 
 // ---- Results ----
-export const getResults = (email) =>
-  unwrap(client.get('/results', {
-    params: email ? { email } : {}
-  }));
-
-export const submitResult = (payload) =>
-  unwrap(client.post('/results', payload));
-
+export const getResults = (email) => unwrap(client.get('/results', { params: email ? { email } : {} }));
+export const submitResult = (payload) => unwrap(client.post('/results', payload));
 export const checkAttempted = (examId, email) =>
-  unwrap(
-    client.get('/results/attempted', {
-      params: { examId, email }
-    })
-  ).then((r) => r.attempted);
+  unwrap(client.get('/results/attempted', { params: { examId, email } })).then((r) => r.attempted);
